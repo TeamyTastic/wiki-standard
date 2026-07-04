@@ -2,7 +2,8 @@
 # install-standard.sh <target-wiki-dir>
 #
 # Installs the wiki-standard shared assets (CLAUDE.md, conventions/,
-# templates/, scripts/check-standard.sh) into a target wiki directory.
+# templates/, scripts/check-standard.sh, scripts/lint-content.sh) into a
+# target wiki directory.
 #
 # - Copies ONLY the standard assets listed in ITEMS below. Never touches any
 #   other file or folder in the target wiki.
@@ -52,6 +53,7 @@ ITEMS=(
   "conventions"
   "templates"
   "scripts/check-standard.sh"
+  "scripts/lint-content.sh"
 )
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
@@ -155,5 +157,6 @@ if [ -n "$BACKUP_DIR" ]; then
   echo "Prior local files were preserved at: $BACKUP_DIR"
 fi
 echo ""
-echo "Nothing outside of CLAUDE.md, conventions/, templates/, and"
-echo "scripts/check-standard.sh was touched in the target wiki."
+echo "Nothing outside of CLAUDE.md, conventions/, templates/,"
+echo "scripts/check-standard.sh, and scripts/lint-content.sh was touched"
+echo "in the target wiki."

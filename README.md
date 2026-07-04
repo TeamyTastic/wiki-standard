@@ -49,10 +49,10 @@ git clone <PRIVATE_REPO_URL> ~/Projects/wiki-standard
 ~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
 ```
 
-The install script copies in `CLAUDE.md`, `conventions/`, `templates/`, and
-`scripts/check-standard.sh` — and only those. It never touches any other
-folder in the target wiki, so your actual notes are completely untouched by
-every install and every future update.
+The install script copies in `CLAUDE.md`, `conventions/`, `templates/`,
+`scripts/check-standard.sh`, and `scripts/lint-content.sh` — and only those.
+It never touches any other folder in the target wiki, so your actual notes
+are completely untouched by every install and every future update.
 
 ## How Updates Propagate
 
@@ -83,6 +83,12 @@ Re-running the install script is always safe:
 Run `scripts/check-standard.sh /path/to/my-vault` at any time to verify a
 wiki's copy of the standard hasn't drifted or gone missing anything, without
 needing to re-install.
+
+Run `scripts/lint-content.sh /path/to/my-vault` at Consolidate time to check
+the wiki's actual *content* — orphan notes, broken `[[links]]`, notes stale
+past a configurable age, unresolved `## Conflicts` sections, and note pairs
+sharing tags with no link between them. It's report-only; it never edits
+anything.
 
 ## Quick Start (Adopting the Standard)
 

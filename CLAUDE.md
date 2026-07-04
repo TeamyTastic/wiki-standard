@@ -30,8 +30,9 @@ A wiki adopting this standard is expected to have (at minimum):
   just deleted; it moves here first. See "Preserving Information" below.
 - **`log.md`** — a single append-only operation log at the wiki root. See
   "Operation Log" below.
-- **`scripts/`** — `check-standard.sh` (verifies the install) and whatever
-  local automation the wiki owner has added.
+- **`scripts/`** — `check-standard.sh` (verifies the install), `lint-content.sh`
+  (content health — see Consolidate, below), and whatever local automation the
+  wiki owner has added.
 
 Do not invent new top-level shared folders without updating `conventions/`
 first — the point of the standard is that every wiki that adopts it looks
@@ -210,7 +211,13 @@ part of the wiki rather than a one-off capture.
 - The note has been Connected for a while and is stable — nobody is actively
   rewriting large parts of it week to week.
 - A review pass (manual or agent-run) touches this note, e.g. checking for
-  duplicate concepts, broken links, or drift from newer notes.
+  duplicate concepts, broken links, or drift from newer notes. Run
+  `scripts/lint-content.sh` for this — it surfaces orphan notes, broken
+  (`[[red links]]`), stale notes (untouched past a configurable threshold),
+  notes with an unresolved `## Conflicts` heading, and note pairs that share
+  tags but aren't linked. It's a report, not an autofix — a Consolidate pass
+  still means an agent or the user reading and deciding, not the script
+  editing anything.
 
 **Criteria to move to the next stage (Archive) — or to stay Consolidated
 indefinitely:**

@@ -48,6 +48,7 @@ FILES=(
   "templates/decision.md"
   "templates/meeting.md"
   "scripts/check-standard.sh"
+  "scripts/lint-content.sh"
 )
 
 checksum() {
