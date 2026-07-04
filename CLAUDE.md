@@ -28,6 +28,8 @@ A wiki adopting this standard is expected to have (at minimum):
   material. See "Staging Uncertain Material" below.
 - **`_archive/`** — where superseded or removed content goes. Nothing is ever
   just deleted; it moves here first. See "Preserving Information" below.
+- **`log.md`** — a single append-only operation log at the wiki root. See
+  "Operation Log" below.
 - **`scripts/`** — `check-standard.sh` (verifies the install) and whatever
   local automation the wiki owner has added.
 
@@ -102,11 +104,37 @@ mature note into a staging note without flagging it as provisional.
 ## Avoiding Silent Deletion (Restated as a Check)
 
 Before any `rm`, any overwrite of a whole file, or any large deletion within a
-note: stop and ask "where does this content go, not just does it go." A
-one-line log entry (in `_archive/CHANGELOG.md` or similar, if the wiki has
-one) recording what was removed, when, and why is good practice for anything
-non-trivial. This is the same principle as "Preserving Information" above,
-stated as a pre-action checklist rather than a policy.
+note: stop and ask "where does this content go, not just does it go." Record
+the removal in `log.md` (see "Operation Log" below) — what was removed, when,
+and why. This is the same principle as "Preserving Information" above, stated
+as a pre-action checklist rather than a policy.
+
+## Operation Log
+
+Every wiki adopting this standard keeps a single append-only `log.md` at its
+root. It is a running record of non-trivial operations an agent performs on
+the wiki — not a substitute for git history, but a human-and-agent-readable
+summary that doesn't require diffing commits to understand.
+
+Format — one entry per operation, newest at the bottom, never edited or
+reordered after being written:
+
+```
+## 2026-07-04 — archive | old-hosting-provider.md
+Superseded by new-hosting-provider.md after the migration. Moved to
+_archive/2026-07-04-old-hosting-provider.md.
+
+## 2026-07-04 — merge | roborock-setup.md + roborock-notes.md
+Duplicate notes created from separate captures. Merged into
+roborock-setup.md, archived roborock-notes.md.
+```
+
+Log at minimum: archives, merges, any deletion-adjacent operation (per
+"Avoiding Silent Deletion"), and promotions of a synthesized answer into a
+new permanent note (see Capture, below). Routine edits, clarifications, and
+new captures don't need a log entry — this is for operations that move or
+remove content, where a later reader would otherwise have to guess what
+happened.
 
 ## The Standard Note Lifecycle
 
@@ -123,7 +151,10 @@ polish or structure.
 - The information doesn't exist as a note yet, in any form.
 - Speed matters more than correctness — a rough capture beats a lost thought.
 - Source can be anything: a conversation, a meeting transcript, a passing
-  idea, an extracted fact from research.
+  idea, an extracted fact from research, or an agent's own synthesized
+  answer to a query that's worth keeping as permanent reference. Promoting a
+  synthesized answer to a note is a valid, first-class capture path — treat
+  it the same as any other capture, and log the promotion in `log.md`.
 
 **Criteria to move to the next stage (Clarify):**
 - The raw capture exists as a file (in `_staging/` if uncertain, or directly
