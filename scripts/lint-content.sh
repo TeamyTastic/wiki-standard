@@ -249,14 +249,17 @@ awk -F'\t' '
     if (tgt in cand) {
       n = split(cand[tgt], owners, "\x1f")
       matched = 0
+      self_matched = 0
       for (i=1; i<=n; i++) {
         if (owners[i] != "" && owners[i] != $1) {
           print $1"\t"owners[i] >> "'"$RESOLVED_LINKS"'"
           print owners[i] >> "'"$LINKED_RELPATHS"'"
           matched = 1
+        } else if (owners[i] != "" && owners[i] == $1) {
+          self_matched = 1
         }
       }
-      if (!matched) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
+      if (!matched && !self_matched) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     } else {
       print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     }
