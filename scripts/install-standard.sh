@@ -147,9 +147,14 @@ for item in "${ITEMS[@]}"; do
 done
 echo ""
 
-COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD)"
-echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
-echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
+if [ -d "${REPO_DIR}/.git" ]; then
+  COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD)"
+  echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
+  echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
+else
+  echo "Warning: $REPO_DIR has no .git directory — version marker not written."
+  COMMIT_HASH="(unknown)"
+fi
 echo ""
 
 echo "Done. wiki-standard installed at commit ${COMMIT_HASH}."
