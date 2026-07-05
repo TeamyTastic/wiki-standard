@@ -68,8 +68,8 @@ ensure_backup_dir() {
   fi
 }
 
-# Returns 0 (true) if src and dst differ (or dst is missing entirely is NOT
-# a difference worth backing up — only existing-and-different matters here).
+# Returns 0 (true) if src and dst differ. Callers must guard against a missing
+# dst before calling this function — it may return 0 for missing dst too.
 paths_differ() {
   local src="$1"
   local dst="$2"
