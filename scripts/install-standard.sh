@@ -147,12 +147,11 @@ for item in "${ITEMS[@]}"; do
 done
 echo ""
 
-if [ -d "${REPO_DIR}/.git" ]; then
-  COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD)"
+if COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null)"; then
   echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
   echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
 else
-  echo "Warning: $REPO_DIR has no .git directory — version marker not written."
+  echo "Warning: $REPO_DIR is not a git repository — version marker not written."
   COMMIT_HASH="(unknown)"
 fi
 echo ""
