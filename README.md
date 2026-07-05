@@ -103,6 +103,23 @@ anything.
    and any LLM agent working in that vault, and explains the folder layout,
    naming/metadata/linking rules, and the capture → clarify → connect →
    consolidate → archive note lifecycle.
+
+## Claude Code Skill
+
+`skills/wiki-standard-adopt/SKILL.md` wraps the adoption flow above as a
+Claude Code skill: point it at a target wiki and it inspects the vault,
+identifies content folders (so it knows what never to touch), runs the
+installer, backs up any conflicting pre-existing `CLAUDE.md`/`templates/`,
+and commits the change as a single commit if the target is a git repo.
+
+To use it, copy the skill into your Claude Code skills directory:
+
+```bash
+cp -R skills/wiki-standard-adopt ~/.claude/skills/
+```
+
+Then trigger it in a Claude Code session with something like "adopt
+wiki-standard into this vault."
 5. Start writing notes using the templates in `templates/` as your starting
    point (copy the template content into a new note — templates are not
    meant to be referenced live).
