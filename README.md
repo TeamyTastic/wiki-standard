@@ -3,8 +3,8 @@
 A small, evolving repo of **shared operating-model assets** for independent
 personal markdown wikis (Obsidian-style vaults, or any plain-markdown
 knowledge base). It contains conventions, templates, an agent operating
-manual, and scripts — and nothing else. No personal notes, no private
-content, ever.
+manual, scripts, and an optional Claude Code skill — and nothing else. No
+personal notes, no private content, ever.
 
 ## Philosophy: Shared Operating Model, Independent Content
 
@@ -19,6 +19,8 @@ wiki-standard inverts that. It is a single, small repo containing **only**:
 - `conventions/` — the rules (naming, metadata, linking, editing)
 - `templates/` — starting shapes for each note type
 - `scripts/` — install and verify tooling
+- `skills/wiki-standard-adopt/` — an optional Claude Code skill that wraps
+  the adoption flow (see "Claude Code Skill" below)
 
 It contains **zero content**. Every wiki that adopts this standard keeps its
 own private repo (or no repo at all) for its actual notes. The two never
