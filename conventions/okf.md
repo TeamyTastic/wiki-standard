@@ -38,13 +38,11 @@ pins down the remaining 10%.
 
 ## Known deviations (deliberate)
 
-1. **`log.md` entry order** — CONFLICT, unresolved. wiki-standard's
-   operation log is append-only with newest at the BOTTOM (see `CLAUDE.md` —
-   "never edited or reordered"); OKF §7 wants date groups newest FIRST.
-   Strict OKF conformance (§9.3) fails on this until resolved. Current
-   position: keep wiki-standard ordering internally; if a bundle is exported
-   for OKF consumers, reverse the log at export time. Flip this only by an
-   explicit owner decision recorded here.
+1. **`log.md` entry order** — RESOLVED 2026-07-09 (owner decision): adopted
+   OKF §7 ordering. Logs are date-grouped, newest date first, bulleted with
+   a leading bold op word; past groups immutable. `CLAUDE.md` "Operation
+   Log" carries the format. Pre-existing logs in already-adopted wikis
+   should be reversed on next touch.
 2. **Wikilinks** — wiki-standard links notes with `[[Title]]`; OKF
    cross-links are plain markdown links. This does NOT break conformance
    (OKF links are a MAY, and consumers tolerate their absence), but OKF
@@ -61,4 +59,4 @@ pins down the remaining 10%.
 - [ ] Every non-reserved `.md` has parseable YAML frontmatter
 - [ ] Every frontmatter has non-empty `type`
 - [ ] `index.md` files (if present) are link-list-only
-- [ ] `log.md` follows §7 *(known deviation 1 — see above)*
+- [ ] `log.md` follows §7 (adopted 2026-07-09 — newest date group first)

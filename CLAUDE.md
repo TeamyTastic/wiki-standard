@@ -127,17 +127,23 @@ root. It is a running record of non-trivial operations an agent performs on
 the wiki — not a substitute for git history, but a human-and-agent-readable
 summary that doesn't require diffing commits to understand.
 
-Format — one entry per operation, newest at the bottom, never edited or
-reordered after being written:
+Format — OKF §7 style (owner decision 2026-07-09, see `conventions/okf.md`):
+date-grouped, **newest date first**, one bullet per operation with a leading
+bold op word. Within a day, append new bullets to that day's group. Existing
+entries are never edited or reordered — "append-only" here means new date
+groups are inserted at the top and past groups are immutable:
 
 ```
-## 2026-07-04 — archive | old-hosting-provider.md
-Superseded by new-hosting-provider.md after the migration. Moved to
-_archive/2026-07-04-old-hosting-provider.md.
+## 2026-07-04
+* **Archive**: old-hosting-provider.md — superseded by
+  new-hosting-provider.md after the migration; moved to
+  _archive/2026-07-04-old-hosting-provider.md.
+* **Merge**: roborock-setup.md + roborock-notes.md — duplicate captures
+  merged into roborock-setup.md, roborock-notes.md archived.
 
-## 2026-07-04 — merge | roborock-setup.md + roborock-notes.md
-Duplicate notes created from separate captures. Merged into
-roborock-setup.md, archived roborock-notes.md.
+## 2026-06-28
+* **Promotion**: synthesized answer on tunnel setup promoted to
+  cloudflare-tunnels.md.
 ```
 
 Log at minimum: archives, merges, any deletion-adjacent operation (per
