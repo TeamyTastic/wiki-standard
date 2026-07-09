@@ -234,6 +234,40 @@ while IFS= read -r rel; do
   fi
 done < "$ALL_MD_FILES"
 
+# External roots (optional): $TARGET_DIR/.lint-external-roots lists directories
+# OUTSIDE this bundle whose notes are valid wikilink targets — e.g. when the
+# bundle is mounted inside a larger vault and links resolve vault-wide.
+# One path per line, ~ allowed, blank lines and #-comments ignored.
+# External notes contribute link-target CANDIDATES only: they are never
+# scanned as content, so they can't appear as orphans/stale/broken themselves.
+EXT_ROOTS_FILE="$TARGET_DIR/.lint-external-roots"
+if [ -f "$EXT_ROOTS_FILE" ]; then
+  while IFS= read -r ext_root; do
+    ext_root="$(trim "$ext_root")"
+    case "$ext_root" in ''|'#'*) continue ;; esac
+    ext_root="${ext_root/#\~/$HOME}"
+    if [ ! -d "$ext_root" ]; then
+      echo "  (external root not found, skipped: $ext_root)" >&2
+      continue
+    fi
+    find "$ext_root" -type f -name '*.md' | while IFS= read -r ef; do
+      ebase="$(basename "$ef" .md)"
+      printf 'EXTERNAL:%s\t%s\n' "$ef" "$ebase" >> "$CANDIDATES"
+      etitle="$(extract_scalar_field "$ef" title)"
+      [ -n "$etitle" ] && printf 'EXTERNAL:%s\t%s\n' "$ef" "$etitle" >> "$CANDIDATES"
+      ealiases="$(extract_list_field "$ef" aliases)"
+      if [ -n "$ealiases" ]; then
+        IFS=',' read -ra ealias_arr <<< "$ealiases"
+        for ea in "${ealias_arr[@]}"; do
+          ea_trimmed="$(trim "$ea")"
+          ea_trimmed="${ea_trimmed%\"}"; ea_trimmed="${ea_trimmed#\"}"
+          [ -n "$ea_trimmed" ] && printf 'EXTERNAL:%s\t%s\n' "$ef" "$ea_trimmed" >> "$CANDIDATES"
+        done
+      fi
+    done
+  done < "$EXT_ROOTS_FILE"
+fi
+
 TOTAL_CONTENT="$(wc -l < "$MANIFEST" | tr -d ' ')"
 
 # --- Resolve links: which relpaths does each link target correspond to? ---
