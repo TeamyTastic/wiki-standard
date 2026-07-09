@@ -81,7 +81,12 @@ wiki root — one path per line, `~` allowed, `#` comments ignored:
 
 `scripts/lint-content.sh` then treats notes under those roots as valid link
 targets (matched by filename, `title`, and `aliases`) without scanning them
-as content — they can't show up as orphans or stale. Use this for genuine
+as content — they can't show up as orphans or stale.
+
+**Accented titles**: visually identical titles can be byte-different
+(NFD-vs-NFC Unicode — common in macOS/Notion/Airtable exports), which breaks
+exact link matching invisibly. When a target's title carries accents, link by
+its kebab-case **basename** instead of the title (learned 2026-07-10). Use this for genuine
 cross-bundle references only; don't point it at another wiki wholesale to
 silence honest red links.
 
