@@ -106,7 +106,7 @@ TAGROWS="${WORKDIR}/tagrows.tsv"          # relpath \t tag
 
 is_excluded_rel() {
   case "$1" in
-    conventions/*|templates/*|scripts/*|_archive/*|_staging/*|.git/*|.obsidian/*|node_modules/*) return 0 ;;
+    conventions/*|templates/*|scripts/*|_archive/*|_staging/*|.git/*|.obsidian/*|node_modules/*|.wiki-standard-backup-*/*) return 0 ;;
     CLAUDE.md|README.md|log.md) return 0 ;;
     *) return 1 ;;
   esac
