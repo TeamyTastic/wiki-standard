@@ -50,6 +50,16 @@ Full schema: `conventions/metadata.md`. Every note gets YAML frontmatter with
 at minimum `title`, `type`, `created`, `updated`, `status`. Check a note's
 `type` field before assuming which template governs its shape.
 
+## OKF Compatibility
+
+Full profile: `conventions/okf.md`. A wiki-standard wiki doubles as an OKF
+(Open Knowledge Format v0.1) knowledge bundle: `type` stays required, add a
+one-line `description` to notes worth indexing, `index.md`/`log.md` are
+reserved filenames, external sources go under a numbered `# Citations`
+heading, and consumers stay permissive about unknown types/keys/broken
+links. Known deviations (log ordering, wikilinks) are listed there — check
+before exporting a bundle to OKF consumers.
+
 ## Linking
 
 Full rules: `conventions/linking.md`. Wikilinks (`[[Note Name]]`) are the
