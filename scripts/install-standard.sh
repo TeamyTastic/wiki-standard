@@ -68,8 +68,8 @@ ensure_backup_dir() {
   fi
 }
 
-# Returns 0 (true) if src and dst differ (or dst is missing entirely is NOT
-# a difference worth backing up — only existing-and-different matters here).
+# Returns 0 (true) if src and dst differ. Callers must guard against a missing
+# dst before calling this function — it may return 0 for missing dst too.
 paths_differ() {
   local src="$1"
   local dst="$2"
@@ -147,9 +147,13 @@ for item in "${ITEMS[@]}"; do
 done
 echo ""
 
-COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD)"
-echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
-echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
+if COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null)"; then
+  echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
+  echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
+else
+  echo "Warning: $REPO_DIR is not a git repository — version marker not written."
+  COMMIT_HASH="(unknown)"
+fi
 echo ""
 
 echo "Done. wiki-standard installed at commit ${COMMIT_HASH}."
