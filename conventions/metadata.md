@@ -18,6 +18,7 @@ the wiki's state without opening every file.
 
 | Field       | Description                                                          | Example                              |
 |-------------|------------------------------------------------------------------------|----------------------------------------|
+| `description`| One-sentence summary; powers index.md entries, search snippets, and OKF consumers (see `okf.md`) | `description: Moneghetti's 20min fartlek of shrinking reps.` |
 | `tags`      | Free-form topical tags, for cross-cutting grouping beyond `type`        | `tags: [strategy, q3-2026]`            |
 | `aliases`   | Alternate names this note should also resolve under for linking         | `aliases: [AC, Alexandra Chen]`        |
 | `related`   | Explicit list of related note titles, supplementing inline wikilinks     | `related: [[Growth Strategy]]`         |

@@ -67,6 +67,29 @@ Whichever approach is chosen, a stub or red link is a Capture-stage artifact
 — it should move through the lifecycle (get clarified, connected) like any
 other note, not linger indefinitely as a placeholder.
 
+## Cross-Bundle Links (external roots)
+
+A wiki that is mounted inside a larger vault (e.g. via a symlink) may hold
+wikilinks whose targets live outside the bundle but resolve fine vault-wide.
+Declare those target directories in a `.lint-external-roots` file at the
+wiki root — one path per line, `~` allowed, `#` comments ignored:
+
+```
+# resolves vault-wide via the parent vault
+~/eobsidian/reference/Bookshelf
+```
+
+`scripts/lint-content.sh` then treats notes under those roots as valid link
+targets (matched by filename, `title`, and `aliases`) without scanning them
+as content — they can't show up as orphans or stale.
+
+**Accented titles**: visually identical titles can be byte-different
+(NFD-vs-NFC Unicode — common in macOS/Notion/Airtable exports), which breaks
+exact link matching invisibly. When a target's title carries accents, link by
+its kebab-case **basename** instead of the title (learned 2026-07-10). Use this for genuine
+cross-bundle references only; don't point it at another wiki wholesale to
+silence honest red links.
+
 ## Handling Broken Links Found During Maintenance
 
 A "broken link" here means a `[[...]]` reference to a note that used to
