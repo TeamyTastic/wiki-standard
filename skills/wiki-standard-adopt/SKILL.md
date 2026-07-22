@@ -141,7 +141,11 @@ cp -R "$WIKI_STANDARD_SRC/conventions/." "$TARGET_DIR/conventions/"
 cp -R "$WIKI_STANDARD_SRC/templates/." "$TARGET_DIR/templates/"
 cp "$WIKI_STANDARD_SRC/scripts/check-standard.sh" "$TARGET_DIR/scripts/check-standard.sh"
 cp "$WIKI_STANDARD_SRC/scripts/lint-content.sh" "$TARGET_DIR/scripts/lint-content.sh"
-git -C "$WIKI_STANDARD_SRC" rev-parse HEAD > "$TARGET_DIR/.wiki-standard-version"
+if [ -d "$WIKI_STANDARD_SRC/.git" ]; then
+  git -C "$WIKI_STANDARD_SRC" rev-parse HEAD > "$TARGET_DIR/.wiki-standard-version"
+else
+  echo "unknown" > "$TARGET_DIR/.wiki-standard-version"
+fi
 ```
 
 ### 7. Verify only the standard files changed
