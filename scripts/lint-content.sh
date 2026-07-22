@@ -61,6 +61,9 @@ while [ "$#" -gt 0 ]; do
         echo "Error: --stale-months requires a value" >&2
         exit 2
       fi
+      case "$2" in
+        *[!0-9]*) echo "Error: --stale-months requires a positive integer" >&2; exit 2 ;;
+      esac
       STALE_MONTHS="$2"
       shift 2
       ;;
