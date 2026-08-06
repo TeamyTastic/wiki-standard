@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check-standard.sh <target-wiki-dir> [wiki-standard-repo-dir]
 #
-# Verifies a target wiki has the expected wiki-standard files present, and
+# Verifies a target workspace has the expected wiki-standard profile files, and
 # (when a source repo is available) reports any that have been locally
 # modified relative to the source, by sha256 checksum.
 #
@@ -37,7 +37,11 @@ fi
 
 # Relative paths (from the wiki root) expected to exist.
 FILES=(
+  "WIKI_PROFILE.md"
+  "AGENT.md"
+  "AGENTS.md"
   "CLAUDE.md"
+  "conventions/okf.md"
   "conventions/naming.md"
   "conventions/metadata.md"
   "conventions/linking.md"
@@ -48,6 +52,7 @@ FILES=(
   "templates/decision.md"
   "templates/meeting.md"
   "scripts/check-standard.sh"
+  "scripts/check-okf.sh"
   "scripts/lint-content.sh"
 )
 
@@ -55,7 +60,7 @@ checksum() {
   shasum -a 256 "$1" | awk '{print $1}'
 }
 
-echo "wiki-standard check"
+echo "wiki-standard profile infrastructure check"
 echo "  target: $TARGET_DIR"
 if [ -n "$SOURCE_DIR" ]; then
   echo "  source: $SOURCE_DIR"
@@ -70,6 +75,12 @@ MISSING_COUNT=0
 
 for rel in "${FILES[@]}"; do
   target_file="${TARGET_DIR}/${rel}"
+
+  if [ -L "$target_file" ]; then
+    printf '[SYMLINK]  %s (profile infrastructure must be local)\n' "$rel"
+    MODIFIED_COUNT=$((MODIFIED_COUNT + 1))
+    continue
+  fi
 
   if [ ! -f "$target_file" ]; then
     printf '[MISSING]  %s\n' "$rel"
