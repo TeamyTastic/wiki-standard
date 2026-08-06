@@ -52,3 +52,67 @@ Do NOT flag the absence of this guard as "uncertain" — it is a definite bug wh
 script is expected to run outside a git repo. Document that expectation in the finding.
 
 Applies to: `scripts/install-standard.sh` and any future install/update scripts.
+
+---
+
+## Improvements (2026-08-06)
+
+### 4. Self-link detection must use the ownership graph, not just filename equality
+
+Spec item 1 says "exclude self-links from BROKEN_LINKS." The implementation question
+that caused hedging tonight: what counts as a self-link when the awk ownership pass
+runs? Answer: a link is a pure self-link when **every owner in the ownership graph
+equals the source file** — i.e. `matched` stays 0 not because no file references the
+target, but because the only file that does is `$1` itself. In that case the link is
+intentional and MUST be skipped, not written to BROKEN_LINKS.
+
+Concretely: if a note `foo.md` contains `[[foo]]` and `foo.md` is the only file in the
+ownership map that lists `foo` as a target, `matched` will be 0 at the end of the awk
+pass — but that is NOT a broken link. The fix is a separate `self_link` counter
+incremented when `owner == source`, and a guard that skips BROKEN_LINKS when
+`matched == 0 && self_link > 0`.
+
+Do NOT flag this ambiguous case as "uncertain." The ownership-graph rule is definitive:
+zero external owners + at least one self-owner = pure self-link = not broken.
+
+Applies to: `scripts/lint-content.sh` — the awk ownership block around line 290.
+
+### 5. Git-guard requirement extends to skills/ scripts, not just scripts/
+
+Spec item 3 names `scripts/install-standard.sh` as the primary target. Tonight's
+finding was in `skills/wiki-standard-adopt/SKILL.md` — a skills script that also
+calls `git -C "$WIKI_STANDARD_SRC" rev-parse HEAD` with no guard. The rule applies
+equally to any file under `skills/` that shells out to git against a directory that
+may not be a git repo at runtime.
+
+The authoritative guard pattern (from item 3) uses `rev-parse HEAD`, NOT `[ -d .git ]`,
+because `.git` is a *file* in worktrees and submodules:
+
+```sh
+if git -C "$WIKI_STANDARD_SRC" rev-parse HEAD >/dev/null 2>&1; then
+  git -C "$WIKI_STANDARD_SRC" rev-parse HEAD > "$TARGET_DIR/.wiki-standard-version"
+else
+  echo "unknown" > "$TARGET_DIR/.wiki-standard-version"
+fi
+```
+
+Do NOT mark the absence of this guard as "uncertain" — it is a definite bug. Confidence
+is 4/5 (AUTOFIX), not lower, because the runtime context (installed copy, no `.git`)
+is explicitly documented in item 3.
+
+Applies to: `skills/wiki-standard-adopt/SKILL.md` and any future skill that installs
+or inspects the wiki-standard source directory.
+
+### 6. SCAN_SPEC entries are authoritative — do not downgrade their verdict
+
+When a SCAN_SPEC entry already classifies a pattern as a "definite bug" or "not
+uncertain," the scanner MUST NOT re-label the same finding as "uncertain" in its
+report. The spec is the resolved ground truth from a prior scan cycle; hedging on
+an already-resolved question adds noise and delays fixes.
+
+Operationally: before assigning a safety score to any finding, check whether a
+SCAN_SPEC item already covers that finding. If it does, inherit the spec's verdict
+directly. Only assign a lower confidence score when the finding is genuinely *new*
+and has no matching spec entry.
+
+Applies to: the scanner's scoring and reporting phase for all findings.
