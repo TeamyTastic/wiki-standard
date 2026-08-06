@@ -105,6 +105,10 @@ anything.
    and any LLM agent working in that vault, and explains the folder layout,
    naming/metadata/linking rules, and the capture → clarify → connect →
    consolidate → archive note lifecycle.
+5. Start writing notes using the templates in `templates/` as your starting
+   point (copy the template content into a new note — templates are not
+   meant to be referenced live).
+6. Periodically pull updates (see "How Updates Propagate" above).
 
 ## Claude Code Skill
 
@@ -122,10 +126,6 @@ cp -R skills/wiki-standard-adopt ~/.claude/skills/
 
 Then trigger it in a Claude Code session with something like "adopt
 wiki-standard into this vault."
-5. Start writing notes using the templates in `templates/` as your starting
-   point (copy the template content into a new note — templates are not
-   meant to be referenced live).
-6. Periodically pull updates (see "How Updates Propagate" above).
 
 ## What This Repo Is Not
 
