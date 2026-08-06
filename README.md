@@ -77,10 +77,11 @@ Re-running the install script is always safe:
   timestamped `.wiki-standard-backup-<timestamp>/` folder inside the wiki)
   before the new version is written.
 - It writes/updates a `.wiki-standard-version` file at the root of the
-  target wiki, containing the exact git commit hash of wiki-standard that
-  was installed. This is how you (or `scripts/check-standard.sh`) can tell
-  which version of the standard any given wiki is running, and whether it's
-  behind.
+  target wiki, containing the exact git commit hash of wiki-standard when
+  the source has Git metadata of its own. An installed copy records
+  `unknown` rather than borrowing an unrelated ancestor repository's hash.
+  This is how you (or `scripts/check-standard.sh`) can tell which version of
+  the standard a wiki is running when the source version is available.
 
 Run `scripts/check-standard.sh /path/to/my-vault` at any time to verify a
 wiki's copy of the standard hasn't drifted or gone missing anything, without

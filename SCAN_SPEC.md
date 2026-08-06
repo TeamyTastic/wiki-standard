@@ -41,12 +41,16 @@ Applies to: any shell function with a `# Returns 0/1 if …` comment.
 that is not inside a genuine git worktree will fail with a fatal error. Guard pattern:
 
 ```sh
-if [ -d "$REPO_DIR/.git" ]; then
+if [ -e "$REPO_DIR/.git" ]; then
   COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD)"
 else
   COMMIT_HASH="unknown"
 fi
 ```
+
+Use `-e`, not `-d`: linked worktrees and submodules store `.git` as a file.
+Checking only `git -C "$REPO_DIR" rev-parse HEAD` is insufficient because Git
+walks up to an ancestor worktree and can return an unrelated repository's commit.
 
 Do NOT flag the absence of this guard as "uncertain" — it is a definite bug whenever the
 script is expected to run outside a git repo. Document that expectation in the finding.
@@ -85,12 +89,13 @@ calls `git -C "$WIKI_STANDARD_SRC" rev-parse HEAD` with no guard. The rule appli
 equally to any file under `skills/` that shells out to git against a directory that
 may not be a git repo at runtime.
 
-The authoritative guard pattern (from item 3) uses `rev-parse HEAD`, NOT `[ -d .git ]`,
-because `.git` is a *file* in worktrees and submodules:
+The authoritative guard pattern (from item 3) requires a `.git` entry directly in
+the source directory, using `-e` because `.git` is a *file* in worktrees and submodules:
 
 ```sh
-if git -C "$WIKI_STANDARD_SRC" rev-parse HEAD >/dev/null 2>&1; then
-  git -C "$WIKI_STANDARD_SRC" rev-parse HEAD > "$TARGET_DIR/.wiki-standard-version"
+if [ -e "$WIKI_STANDARD_SRC/.git" ] && \
+   STANDARD_VERSION=$(git -C "$WIKI_STANDARD_SRC" rev-parse HEAD 2>/dev/null); then
+  printf '%s\n' "$STANDARD_VERSION" > "$TARGET_DIR/.wiki-standard-version"
 else
   echo "unknown" > "$TARGET_DIR/.wiki-standard-version"
 fi

@@ -61,6 +61,9 @@ while [ "$#" -gt 0 ]; do
         echo "Error: --stale-months requires a value" >&2
         exit 2
       fi
+      case "$2" in
+        ''|*[!0-9]*|0) echo "Error: --stale-months must be a positive integer" >&2; exit 2 ;;
+      esac
       STALE_MONTHS="$2"
       shift 2
       ;;
@@ -153,7 +156,7 @@ extract_list_field() {
 trim() {
   local s="$1"
   s="${s#"${s%%[![:space:]]*}"}"
-  s="${s%"${s##*[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
   printf '%s' "$s"
 }
 
@@ -283,20 +286,17 @@ awk -F'\t' '
     if (tgt in cand) {
       n = split(cand[tgt], owners, "\x1f")
       matched = 0
-      self_only = 1
+      self_matched = 0
       for (i=1; i<=n; i++) {
-        if (owners[i] != "") {
-          if (owners[i] != $1) {
-            print $1"\t"owners[i] >> "'"$RESOLVED_LINKS"'"
-            print owners[i] >> "'"$LINKED_RELPATHS"'"
-            matched = 1
-            self_only = 0
-          }
+        if (owners[i] != "" && owners[i] != $1) {
+          print $1"\t"owners[i] >> "'"$RESOLVED_LINKS"'"
+          print owners[i] >> "'"$LINKED_RELPATHS"'"
+          matched = 1
+        } else if (owners[i] != "" && owners[i] == $1) {
+          self_matched = 1
         }
       }
-      # self_only=1 means all resolved owners were the source note itself
-      # (pure self-link) — not a broken link, skip silently
-      if (!matched && !self_only) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
+      if (!matched && !self_matched) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     } else {
       print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     }

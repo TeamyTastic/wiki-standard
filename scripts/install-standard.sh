@@ -12,7 +12,8 @@
 #   to be installed), the existing copy is backed up first rather than
 #   silently overwritten.
 # - Writes/updates .wiki-standard-version in the target with this repo's
-#   current commit hash.
+#   current commit hash, or "unknown" when this is an installed copy without
+#   Git metadata of its own.
 #
 # macOS/BSD-safe: no GNU-only flags, all paths quoted.
 
@@ -68,8 +69,8 @@ ensure_backup_dir() {
   fi
 }
 
-# Returns 0 (true) if src and dst differ (or dst is missing entirely is NOT
-# a difference worth backing up — only existing-and-different matters here).
+# Returns 0 (true) if src and dst differ. Callers must guard against a missing
+# dst before calling this function — it may return 0 for missing dst too.
 paths_differ() {
   local src="$1"
   local dst="$2"
@@ -147,7 +148,11 @@ for item in "${ITEMS[@]}"; do
 done
 echo ""
 
-COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD)"
+COMMIT_HASH="unknown"
+if [ -e "$REPO_DIR/.git" ] && \
+   RESOLVED_COMMIT_HASH="$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null)"; then
+  COMMIT_HASH="$RESOLVED_COMMIT_HASH"
+fi
 echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
 echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
 echo ""
