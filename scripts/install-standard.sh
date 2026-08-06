@@ -5,8 +5,8 @@
 # adapters, conventions, templates, and deterministic checks into a target
 # knowledge directory.
 #
-# - Copies ONLY the standard assets listed in ITEMS below. Never touches any
-#   other file or folder in the target wiki.
+# - Copies ONLY the standard assets declared by `.wiki-standard.json`. Never
+#   touches any other file or folder in the target wiki.
 # - Idempotent: safe to re-run. If the target already has a conflicting
 #   local copy of standard infrastructure (i.e. it differs from what's about
 #   to be installed), the existing copy is backed up first rather than
@@ -37,6 +37,21 @@ TARGET_DIR_ARG="$1"
 # copy that was itself installed into a target wiki.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+MANIFEST="${REPO_DIR}/.wiki-standard.json"
+MANIFEST_READER="${REPO_DIR}/scripts/manifest-paths.sh"
+
+if [ ! -f "$MANIFEST" ] || [ ! -f "$MANIFEST_READER" ]; then
+  echo "Error: wiki-standard ownership manifest or reader is missing." >&2
+  exit 1
+fi
+
+# shellcheck source=manifest-paths.sh
+source "$MANIFEST_READER"
+
+if [ "$(wiki_standard_manifest_integer "$MANIFEST" manifest_version 2>/dev/null || true)" != "1" ]; then
+  echo "Error: unsupported or malformed ownership manifest version." >&2
+  exit 1
+fi
 
 if [ ! -d "$TARGET_DIR_ARG" ]; then
   if [ "$DRY_RUN" -eq 1 ]; then
@@ -58,18 +73,48 @@ echo "wiki-standard source: $REPO_DIR"
 echo "install target:       $TARGET_DIR"
 echo ""
 
-# Relative paths (from REPO_DIR) to install into the same relative path under TARGET_DIR.
-ITEMS=(
-  "WIKI_PROFILE.md"
-  "AGENT.md"
-  "AGENTS.md"
-  "CLAUDE.md"
-  "conventions"
-  "templates"
-  "scripts/check-standard.sh"
-  "scripts/check-okf.sh"
-  "scripts/lint-content.sh"
-)
+# Relative paths (from REPO_DIR) installed into the same target paths.
+# This array is derived from the manifest rather than maintained separately.
+ITEMS=()
+if ! MANIFEST_ITEMS="$(wiki_standard_manifest_array "$MANIFEST" standard)"; then
+  echo "Error: ownership.standard is missing or malformed." >&2
+  exit 1
+fi
+while IFS= read -r item; do
+  [ -z "$item" ] && continue
+  if ! wiki_standard_validate_relative_path "$item"; then
+    echo "Error: unsafe standard path in manifest: '$item'." >&2
+    exit 1
+  fi
+  if [ ! -e "${REPO_DIR}/${item}" ]; then
+    echo "Error: declared standard asset is missing from source: '$item'." >&2
+    exit 1
+  fi
+  ITEMS[${#ITEMS[@]}]="$item"
+done <<< "$MANIFEST_ITEMS"
+
+if [ "${#ITEMS[@]}" -eq 0 ]; then
+  echo "Error: ownership.standard is empty or unreadable." >&2
+  exit 1
+fi
+
+if ! VERSION_MARKER_REL="$(wiki_standard_manifest_scalar "$MANIFEST" version_marker)" || \
+   ! wiki_standard_validate_relative_path "$VERSION_MARKER_REL"; then
+  echo "Error: ownership.generated.version_marker is missing or unsafe." >&2
+  exit 1
+fi
+if ! BACKUP_PATTERN="$(wiki_standard_manifest_scalar "$MANIFEST" backup_pattern)"; then
+  echo "Error: ownership.generated.backup_pattern is missing or malformed." >&2
+  exit 1
+fi
+case "$BACKUP_PATTERN" in
+  *\*) BACKUP_PREFIX="${BACKUP_PATTERN%\*}" ;;
+  *) echo "Error: backup_pattern must end in '*'." >&2; exit 1 ;;
+esac
+if ! wiki_standard_validate_relative_path "$BACKUP_PREFIX"; then
+  echo "Error: ownership.generated.backup_pattern is unsafe." >&2
+  exit 1
+fi
 
 assert_no_symlink_components() {
   local rel_path="$1"
@@ -94,6 +139,7 @@ assert_no_symlink_components() {
 for item in "${ITEMS[@]}"; do
   assert_no_symlink_components "$item"
 done
+assert_no_symlink_components "$VERSION_MARKER_REL"
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR=""
@@ -103,7 +149,11 @@ ensure_backup_dir() {
     return 0
   fi
   if [ -z "$BACKUP_DIR" ]; then
-    BACKUP_DIR="${TARGET_DIR}/.wiki-standard-backup-${TIMESTAMP}"
+    BACKUP_DIR="${TARGET_DIR}/${BACKUP_PREFIX}${TIMESTAMP}"
+    if [ -L "$BACKUP_DIR" ]; then
+      echo "Error: generated backup path is a symlink: '$BACKUP_DIR'." >&2
+      exit 1
+    fi
     mkdir -p "$BACKUP_DIR"
     echo "Local differences detected — backing up conflicting files to:"
     echo "  $BACKUP_DIR"
@@ -212,10 +262,10 @@ if [ -e "$REPO_DIR/.git" ] && \
   COMMIT_HASH="$RESOLVED_COMMIT_HASH"
 fi
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "  would write: .wiki-standard-version -> ${COMMIT_HASH}"
+  echo "  would write: ${VERSION_MARKER_REL} -> ${COMMIT_HASH}"
 else
-  echo "$COMMIT_HASH" > "${TARGET_DIR}/.wiki-standard-version"
-  echo "Version marker written: ${TARGET_DIR}/.wiki-standard-version -> ${COMMIT_HASH}"
+  echo "$COMMIT_HASH" > "${TARGET_DIR}/${VERSION_MARKER_REL}"
+  echo "Version marker written: ${TARGET_DIR}/${VERSION_MARKER_REL} -> ${COMMIT_HASH}"
 fi
 echo ""
 
@@ -228,7 +278,5 @@ if [ -n "$BACKUP_DIR" ]; then
   echo "Prior local files were preserved at: $BACKUP_DIR"
 fi
 echo ""
-echo "Nothing outside of WIKI_PROFILE.md, AGENT.md, AGENTS.md, CLAUDE.md,"
-echo "conventions/, templates/, scripts/check-standard.sh, scripts/check-okf.sh,"
-echo "and scripts/lint-content.sh was touched"
-echo "in the target wiki."
+echo "Only ownership.standard paths from .wiki-standard.json and the generated"
+echo "version marker declared there were touched in the target workspace."

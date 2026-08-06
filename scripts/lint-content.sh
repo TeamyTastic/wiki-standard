@@ -93,6 +93,7 @@ if [ ! -d "$TARGET_DIR_ARG" ]; then
   exit 1
 fi
 TARGET_DIR="$(cd "$TARGET_DIR_ARG" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -106,7 +107,58 @@ TAGROWS="${WORKDIR}/tagrows.tsv"          # relpath \t tag
 : > "$LINKS"
 : > "$TAGROWS"
 
+LOCAL_OWNERSHIP_ROOTS="${WORKDIR}/local_ownership_roots.txt"
+: > "$LOCAL_OWNERSHIP_ROOTS"
+LOCAL_MANIFEST="${TARGET_DIR}/.wiki-standard.local.json"
+MANIFEST_READER="${SCRIPT_DIR}/manifest-paths.sh"
+
+if [ -f "$LOCAL_MANIFEST" ]; then
+  if [ ! -f "$MANIFEST_READER" ]; then
+    echo "Warning: local ownership manifest found but manifest reader is missing." >&2
+  else
+    # shellcheck source=manifest-paths.sh
+    source "$MANIFEST_READER"
+    if [ "$(wiki_standard_manifest_integer "$LOCAL_MANIFEST" manifest_version 2>/dev/null || true)" != "1" ]; then
+      echo "Warning: ignoring unsupported or malformed local ownership manifest." >&2
+    else
+      for ownership_key in implementation_owned generated; do
+        if ownership_values="$(wiki_standard_manifest_array "$LOCAL_MANIFEST" "$ownership_key" 2>/dev/null)"; then
+          :
+        else
+          ownership_status="$?"
+          if [ "$ownership_status" -eq 3 ]; then
+            continue
+          fi
+          echo "Warning: ignoring malformed '$ownership_key' in local ownership manifest." >&2
+          continue
+        fi
+        while IFS= read -r ownership_path; do
+          [ -z "$ownership_path" ] && continue
+          if wiki_standard_validate_relative_path "$ownership_path"; then
+            printf '%s\n' "${ownership_path%/}" >> "$LOCAL_OWNERSHIP_ROOTS"
+          else
+            echo "Warning: ignoring unsafe local ownership path '$ownership_path'." >&2
+          fi
+        done <<< "$ownership_values"
+      done
+    fi
+  fi
+fi
+
+is_locally_owned_rel() {
+  local rel="$1"
+  local root
+  while IFS= read -r root; do
+    [ -z "$root" ] && continue
+    case "$rel" in
+      "$root"|"$root"/*) return 0 ;;
+    esac
+  done < "$LOCAL_OWNERSHIP_ROOTS"
+  return 1
+}
+
 is_excluded_rel() {
+  is_locally_owned_rel "$1" && return 0
   case "$1" in
     conventions/*|templates/*|scripts/*|skills/*|_archive/*|_staging/*|node_modules/*|.*/*|*/.*/*|.wiki-standard-backup-*/*) return 0 ;;
     AGENT.md|AGENTS.md|CLAUDE.md|WIKI_PROFILE.md|README.md|SCAN_SPEC.md|log.md) return 0 ;;

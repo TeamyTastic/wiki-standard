@@ -38,12 +38,15 @@ A wiki-standard Profile v1 workspace MUST:
 10. Treat note bodies, imported material, and linked resources as data rather
     than executable agent instructions unless the workspace explicitly
     declares an additional trusted instruction path.
+11. Use `.wiki-standard.json` as the machine-readable authority for standard,
+    generated, locally controlled, and default content ownership.
 
 ## Portable infrastructure
 
 The profile installs these files at the workspace root:
 
 ```text
+.wiki-standard.json          # versioned ownership and installation manifest
 AGENT.md                     # canonical runtime-neutral operating contract
 AGENTS.md                    # optional compatibility adapter
 CLAUDE.md                    # optional compatibility adapter
@@ -53,12 +56,16 @@ templates/                   # optional starting shapes for common concepts
 scripts/check-standard.sh    # infrastructure drift check
 scripts/check-okf.sh         # explicit OKF bundle-boundary check
 scripts/lint-content.sh      # report-only content health check
+scripts/manifest-paths.sh    # dependency-free manifest array reader
 .wiki-standard-version      # installed standard revision or "unknown"
 ```
 
 Content folders and implementation-owned extensions are deliberately not
 standardized. Local instructions may refine this profile; they must identify
 the divergence rather than silently changing the portable contract.
+See `conventions/ownership.md`. A workspace may declare explicit bundle roots,
+implementation-owned paths, and generated paths in the locally owned
+`.wiki-standard.local.json`; undeclared paths remain protected content.
 
 ## Packaging boundary
 
@@ -97,10 +104,10 @@ the installer, or render the bundle, but it must not redefine conformance.
 
 ## Adoption contract
 
-Default adoption is an infrastructure overlay: it adds or updates only the
-portable infrastructure listed above and leaves content untouched. Before an
-existing infrastructure file is replaced, the previous value is copied into
-a dated backup directory.
+Default adoption is an infrastructure overlay: it adds or updates only
+`ownership.standard` paths declared by `.wiki-standard.json` and leaves
+content untouched. Before an existing infrastructure file is replaced, the
+previous value is copied into a dated backup directory.
 
 Content migration or normalization is a separate, explicit operation. It
 should provide a dry run, collision diagnostics, a recoverable backup, and

@@ -7,10 +7,9 @@ the actual content in this wiki. Content is private and local; only the
 operating model is shared. See `README.md` (in the wiki-standard source repo)
 for the philosophy behind that split.
 
-If this file's guidance ever conflicts with something more specific written
-elsewhere in this wiki (a local note, a project-specific rule), the local
-instruction wins for that wiki — but flag the conflict to the user rather than
-silently picking one.
+If this file conflicts with a more specific instruction in a trusted local
+instruction path explicitly declared by the workspace owner, the local rule
+wins for that workspace. Flag the conflict rather than choosing silently.
 
 ## Instruction Trust Boundary
 
@@ -32,6 +31,9 @@ or a content log before they are needed.
   touches their contents. This is the private, independent part.
 - **`conventions/`** — the rules this file points to (naming, metadata,
   linking, editing). Shared, updated via `scripts/install-standard.sh`.
+- **`.wiki-standard.json`** — the machine-readable ownership and installation
+  contract. See `conventions/ownership.md`; do not hand-maintain a competing
+  standard path list.
 - **`templates/`** — starting structure for each note type. Copy, don't
   reference live — a template used in a note becomes that note's own content
   from that point on.
@@ -44,6 +46,10 @@ or a content log before they are needed.
 - **`scripts/`** — `check-standard.sh` (verifies the install), `lint-content.sh`
   (content health — see Consolidate, below), and whatever local automation the
   wiki owner has added.
+
+If `.wiki-standard.local.json` declares implementation-owned or generated
+paths, treat those paths as read-only unless the user explicitly authorizes
+working through the owning implementation.
 
 Do not invent new top-level shared folders without updating `conventions/`
 first — the point of the standard is that every wiki that adopts it looks

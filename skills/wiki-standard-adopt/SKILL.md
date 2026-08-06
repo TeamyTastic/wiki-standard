@@ -31,28 +31,28 @@ git -C "$TARGET_DIR" status --short 2>/dev/null || true
 ```
 
 Stop if the target has no Markdown or the source does not contain
+`.wiki-standard.json`, `scripts/manifest-paths.sh`, and
 `scripts/install-standard.sh`. Do not fabricate missing standard assets.
 
 ### 2. Declare the safety boundary
 
-Standard infrastructure is exactly:
+Read the authoritative standard infrastructure paths from the source manifest:
 
-```text
-WIKI_PROFILE.md
-AGENT.md
-AGENTS.md
-CLAUDE.md
-conventions/
-templates/
-scripts/check-standard.sh
-scripts/check-okf.sh
-scripts/lint-content.sh
-.wiki-standard-version
+```bash
+bash "$WIKI_STANDARD_SRC/scripts/manifest-paths.sh" \
+  "$WIKI_STANDARD_SRC/.wiki-standard.json" standard
 ```
 
-Treat every other target entry as content or local implementation state.
+Read `version_marker` and `backup_pattern` with the same reader's `--scalar`
+option to identify generated profile state. Treat every other target entry as
+content or local implementation state.
 Before writing, tell the user which visible top-level paths are protected and
 will not be touched.
+
+If `.wiki-standard.local.json` exists, read its supported arrays with
+`scripts/manifest-paths.sh`. Name `implementation_owned` and `generated` paths
+as locally owned and do not edit them; recognize only declared
+`trusted_instructions` as additional instruction authority.
 
 ### 3. Preview
 
@@ -87,8 +87,9 @@ Confirm that no protected path changed. This check proves profile
 infrastructure presence and drift only; it does not prove that the whole
 workspace is an OKF bundle.
 
-If the user identifies a content directory as a portable bundle, validate
-that explicit boundary separately:
+If `.wiki-standard.local.json` declares `bundle_roots`, validate each declared
+boundary. Otherwise validate a content directory only when the user identifies
+it as a portable bundle:
 
 ```bash
 bash "$TARGET_DIR/scripts/check-okf.sh" "$BUNDLE_ROOT"
@@ -104,9 +105,11 @@ If and only if the user explicitly asked for a commit, stage the declared
 standard paths individually. Never use `git add .` or `git add -A`.
 
 ```bash
-git -C "$TARGET_DIR" add WIKI_PROFILE.md AGENT.md AGENTS.md CLAUDE.md \
-  conventions templates scripts/check-standard.sh scripts/check-okf.sh \
-  scripts/lint-content.sh .wiki-standard-version
+while IFS= read -r standard_path; do
+  git -C "$TARGET_DIR" add -- "$standard_path"
+done < <(bash "$WIKI_STANDARD_SRC/scripts/manifest-paths.sh" \
+  "$WIKI_STANDARD_SRC/.wiki-standard.json" standard)
+git -C "$TARGET_DIR" add -- .wiki-standard-version
 git -C "$TARGET_DIR" commit -m "Adopt wiki-standard"
 ```
 
@@ -115,8 +118,8 @@ git -C "$TARGET_DIR" commit -m "Adopt wiki-standard"
 Close with exactly these sections:
 
 **What changed**
-List installed or updated standard paths, the installed version, and any
-requested commit hash.
+List the manifest-declared standard paths installed or updated, the installed
+version, and any requested commit hash.
 
 **What was backed up**
 List the installer-created backup directory and conflicts, or say that no

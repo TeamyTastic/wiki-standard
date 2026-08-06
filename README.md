@@ -17,6 +17,7 @@ content and someone else's git history.
 wiki-standard inverts that. It is a single, small repo containing **only**:
 
 - `WIKI_PROFILE.md` — the normative, runtime-neutral profile
+- `.wiki-standard.json` — the versioned ownership and installation manifest
 - `AGENT.md` — how any human or software agent should behave inside a wiki
 - `AGENTS.md` / `CLAUDE.md` — thin discovery adapters that point to `AGENT.md`
 - `conventions/` — the rules (naming, metadata, linking, editing)
@@ -54,11 +55,11 @@ git clone <PRIVATE_REPO_URL> ~/Projects/wiki-standard
 ~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
 ```
 
-The install script copies in `WIKI_PROFILE.md`, `AGENT.md`, the two discovery
-adapters, `conventions/`, `templates/`, `scripts/check-standard.sh`,
-`scripts/check-okf.sh`, and `scripts/lint-content.sh`—and only those. It never
-touches any other folder in the target wiki, so actual notes remain untouched
-by every install and update.
+The install script derives its exact scope from
+`.wiki-standard.json` → `ownership.standard`. It installs the profile, neutral
+agent contract, discovery adapters, conventions, templates, and deterministic
+tools—and only those declared paths. It never touches any other target path,
+so actual notes remain untouched by every install and update.
 
 Preview the exact scope before writing:
 
@@ -102,6 +103,12 @@ Run `scripts/check-okf.sh /path/to/content-bundle` to validate the minimum OKF
 v0.2 document contract at an explicit content boundary. Keeping profile
 infrastructure outside that boundary avoids misclassifying `AGENT.md`,
 templates, and conventions as knowledge concepts.
+
+The ownership convention defaults every undeclared workspace path to protected
+content. An optional workspace-owned `.wiki-standard.local.json` can identify
+explicit `bundle_roots`, `implementation_owned`, and `generated` paths without
+expanding installer authority. It may also declare `trusted_instructions`;
+ordinary notes remain data. See `conventions/ownership.md`.
 
 Run `scripts/lint-content.sh /path/to/my-vault` at Consolidate time to check
 the wiki's actual *content* — orphan notes, broken `[[links]]`, notes stale
