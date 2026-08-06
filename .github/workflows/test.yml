@@ -1,0 +1,26 @@
+name: Test wiki-standard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wiki-standard-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Check shell syntax
+        run: bash -n scripts/*.sh tests/test-standard.sh
+
+      - name: Run regression suite
+        run: bash tests/test-standard.sh
