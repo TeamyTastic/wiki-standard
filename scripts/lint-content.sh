@@ -283,14 +283,20 @@ awk -F'\t' '
     if (tgt in cand) {
       n = split(cand[tgt], owners, "\x1f")
       matched = 0
+      self_only = 1
       for (i=1; i<=n; i++) {
-        if (owners[i] != "" && owners[i] != $1) {
-          print $1"\t"owners[i] >> "'"$RESOLVED_LINKS"'"
-          print owners[i] >> "'"$LINKED_RELPATHS"'"
-          matched = 1
+        if (owners[i] != "") {
+          if (owners[i] != $1) {
+            print $1"\t"owners[i] >> "'"$RESOLVED_LINKS"'"
+            print owners[i] >> "'"$LINKED_RELPATHS"'"
+            matched = 1
+            self_only = 0
+          }
         }
       }
-      if (!matched) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
+      # self_only=1 means all resolved owners were the source note itself
+      # (pure self-link) — not a broken link, skip silently
+      if (!matched && !self_only) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     } else {
       print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     }
