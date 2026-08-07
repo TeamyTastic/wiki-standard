@@ -1,7 +1,7 @@
 # Safe Editing Rules
 
 These rules govern how any edit — human or agent — is made to a note once it
-exists. They exist to make "never silently delete" (see `CLAUDE.md`)
+exists. They exist to make "never silently delete" (see `AGENT.md`)
 concrete and actionable at the moment of editing, not just as a policy
 statement.
 
@@ -25,7 +25,7 @@ Instead:
    note being actively edited (or to both, if both are being touched):
    ```markdown
    ## Conflicts
-   - This note states X was decided on 2026-05-01. [[Other Note]] states
+   - This note states X was decided on 2026-05-01. [Other Note](/other-note.md) states
      X was decided on 2026-06-15. Not yet reconciled — check source
      material or ask the note owner.
    ```
@@ -46,7 +46,7 @@ that belong to the user.
 ## Flagging Uncertainty Inline
 
 When a specific claim within an otherwise-solid note is uncertain (not the
-whole note — see `_staging/` in `CLAUDE.md` for whole-note uncertainty), flag
+whole note — see `_staging/` in `AGENT.md` for whole-note uncertainty), flag
 it inline rather than either omitting it or stating it as fact:
 
 ```markdown
@@ -62,7 +62,7 @@ Or, for a running list of such flags in one place within the note:
 ```
 
 An inline flag is a Clarify-stage signal — the note shouldn't be considered
-fully Connected/Consolidated (per the lifecycle in `CLAUDE.md`) while
+fully Connected/Consolidated (per the lifecycle in `AGENT.md`) while
 material `## Unverified` items remain open, though it's fine for the note to
 otherwise be in active use.
 
@@ -93,7 +93,7 @@ prior content.
 ## Summary Checklist Before Any Edit
 
 - Is this additive, or does it remove/replace something? → if removing,
-  where does the removed content go (see `CLAUDE.md` → Preserving
+  where does the removed content go (see `AGENT.md` → Preserving
   Information)?
 - Does this edit contradict another note? → surface, don't silently resolve.
 - Is any part of what I'm writing uncertain? → flag inline or stage it.

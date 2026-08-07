@@ -1,62 +1,90 @@
-# OKF Compatibility (Open Knowledge Format v0.1)
+# OKF v0.2 Profile
 
-wiki-standard wikis double as **OKF knowledge bundles** — Google's open
-format for agent-readable knowledge corpora
-([spec](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)).
-OKF is markdown + YAML frontmatter with one required field and permissive
-consumers, so a wiki-standard wiki is already ~90% conformant. This file
-pins down the remaining 10%.
+wiki-standard concept documents use portable [Open Knowledge Format (OKF)
+v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md):
+a directory of Markdown documents with YAML frontmatter. OKF deliberately
+does not prescribe an editor, agent, runtime, storage service, or taxonomy.
+
+Profile infrastructure at the workspace root is not automatically part of an
+OKF bundle. Select a dedicated content directory as the bundle root or export
+concept documents into a clean bundle; see `WIKI_PROFILE.md`.
 
 ## Mapping
 
 | OKF concept | wiki-standard equivalent |
 |---|---|
-| Knowledge Bundle | the wiki (its root = bundle root) |
-| Concept document | a note |
-| Concept ID (`path/no-ext`) | note path (lowercase-hyphenated per `naming.md`) |
-| `type` (required, open vocabulary) | `type` (required, 5-value vocabulary per `metadata.md`) — stricter is conformant |
-| `title` / `tags` / `timestamp` | `title` / `tags` / `updated` |
-| `description` (recommended) | **adopted** — see below |
-| `index.md` (reserved, progressive disclosure) | **adopted** — optional per directory, no frontmatter (except bundle root, which may carry `okf_version: "0.1"`) |
-| `# Citations` numbered section | **adopted** — use for externally-sourced claims |
-| Cross-links as markdown links | wikilinks `[[...]]` — see deviation 2 |
+| Knowledge bundle | an explicitly selected content directory or clean export |
+| Concept document | any non-reserved Markdown note |
+| Concept ID | note path without `.md` |
+| `type` | required, open-vocabulary concept kind |
+| `title`, `description`, `tags` | recommended portable display and discovery fields |
+| `sources` | structured provenance mappings |
+| Standard Markdown link | portable relationship between concepts |
+| `index.md` | optional progressive-disclosure listing |
+| `log.md` | optional newest-first update history |
 
-## What we adopt from OKF
+## Required and recommended fields
 
-1. **`description` frontmatter field** (optional-but-recommended, one
-   sentence). Powers index generation, search snippets, and OKF consumers.
-   Listed in `metadata.md`.
-2. **`index.md` as a reserved filename** — never a concept/note; contains
-   only grouped link lists with per-entry descriptions (OKF §6). Generate
-   per-directory indexes when a folder grows past ~15 notes.
-3. **`# Citations`** as the conventional heading for numbered external
-   sources at the bottom of a note (OKF §8). Prefer it over ad-hoc
-   "Sources"/"References" headings in new notes.
-4. **Permissive consumption** — agents reading a wiki MUST tolerate unknown
-   `type` values, unknown frontmatter keys, and broken links (OKF §9). This
-   was already the spirit of `editing-rules.md`; it is now explicit.
+`type` is the only universally required frontmatter key. wiki-standard
+templates recommend `title`, `description`, `created`, `updated`, `status`,
+`tags`, and `aliases` for common personal-knowledge workflows. Consumers
+must tolerate unknown types and preserve unknown fields when round-tripping.
 
-## Known deviations (deliberate)
+Use OKF lifecycle values for portable `status`:
 
-1. **`log.md` entry order** — RESOLVED 2026-07-09 (owner decision): adopted
-   OKF §7 ordering. Logs are date-grouped, newest date first, bulleted with
-   a leading bold op word; past groups immutable. `CLAUDE.md` "Operation
-   Log" carries the format. Pre-existing logs in already-adopted wikis
-   should be reversed on next touch.
-2. **Wikilinks** — wiki-standard links notes with `[[Title]]`; OKF
-   cross-links are plain markdown links. This does NOT break conformance
-   (OKF links are a MAY, and consumers tolerate their absence), but OKF
-   consumers won't traverse wikilinks. For bundles meant for external
-   exchange, add markdown links for load-bearing relationships or convert
-   at export time.
-3. **Closed `type` vocabulary** — wiki-standard keeps its 5 types (+ the
-   documented extension path in `metadata.md`) rather than OKF's open
-   vocabulary. Conformant: OKF requires only that `type` is present and
-   non-empty.
+- `draft` — incomplete or under review;
+- `stable` — ready for normal consumption; this is the default when absent;
+- `deprecated` — preserved for history and links but no longer current.
 
-## Conformance checklist (OKF v0.1, §9)
+An implementation may add workflow-specific fields, but it must not require a
+general OKF consumer to understand them.
 
-- [ ] Every non-reserved `.md` has parseable YAML frontmatter
-- [ ] Every frontmatter has non-empty `type`
-- [ ] `index.md` files (if present) are link-list-only
-- [ ] `log.md` follows §7 (adopted 2026-07-09 — newest date group first)
+## Provenance
+
+Record derivation in `sources`, not in a scalar `source` field:
+
+```yaml
+sources:
+  - id: source-key
+    resource: https://example.com/source
+    title: Optional source title
+```
+
+`resource` is required within each source entry. Other OKF credibility signals
+are optional. Do not invent `author`, `generated`, `verified`, timestamps, or
+source relationships. A body link expresses navigation or a relationship; it
+does not by itself assert provenance.
+
+For per-claim attribution, use a Markdown footnote whose label matches a
+`sources[].id` value.
+
+## Links
+
+Produce standard Markdown links. Bundle-root-relative links are preferred for
+stable internal identities:
+
+```markdown
+[Growth strategy](/concepts/growth-strategy.md)
+```
+
+Relative Markdown paths are also valid. Consumers tolerate broken links.
+Legacy wikilinks may remain readable compatibility input, but they are not the
+portable output format.
+
+## Reserved files
+
+- `index.md` is a link-list index and is not a concept document. A root index
+  may declare `okf_version: "0.2"`.
+- `log.md` is an optional, date-grouped update history with newest dates first.
+
+Whether indexes and logs are edited manually or generated is an implementation
+choice. The implementation must declare ownership before an agent edits them.
+
+## Conformance checklist
+
+- [ ] Every non-reserved Markdown document has parseable YAML frontmatter.
+- [ ] Every concept has a non-empty `type`.
+- [ ] New internal relationships use standard Markdown links.
+- [ ] Known provenance uses structured `sources` entries.
+- [ ] Unknown types and fields are preserved.
+- [ ] `index.md` and `log.md` follow their reserved-file formats when present.

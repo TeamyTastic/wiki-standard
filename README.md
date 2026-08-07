@@ -1,10 +1,11 @@
 # wiki-standard
 
 A small, evolving repo of **shared operating-model assets** for independent
-personal markdown wikis (Obsidian-style vaults, or any plain-markdown
-knowledge base). It contains conventions, templates, an agent operating
-manual, scripts, and an optional Claude Code skill — and nothing else. No
-personal notes, no private content, ever.
+Markdown knowledge bases. It contains a portable profile, conventions,
+templates, an agent operating contract, deterministic scripts, and optional
+runtime adapters—and nothing else. It requires no particular editor, model,
+agent runtime, storage service, or automation product. No personal notes, no
+private content, ever.
 
 ## Philosophy: Shared Operating Model, Independent Content
 
@@ -15,12 +16,15 @@ content and someone else's git history.
 
 wiki-standard inverts that. It is a single, small repo containing **only**:
 
-- `CLAUDE.md` — how an LLM agent should behave inside a wiki
+- `WIKI_PROFILE.md` — the normative, runtime-neutral profile
+- `.wiki-standard.json` — the versioned ownership and installation manifest
+- `AGENT.md` — how any human or software agent should behave inside a wiki
+- `AGENTS.md` / `CLAUDE.md` — thin discovery adapters that point to `AGENT.md`
 - `conventions/` — the rules (naming, metadata, linking, editing)
 - `templates/` — starting shapes for each note type
 - `scripts/` — install and verify tooling
-- `skills/wiki-standard-adopt/` — an optional Claude Code skill that wraps
-  the adoption flow (see "Claude Code Skill" below)
+- `skills/wiki-standard-adopt/` — an optional skill-format adapter that wraps
+  the adoption flow (see "Optional Adapters" below)
 
 It contains **zero content**. Every wiki that adopts this standard keeps its
 own private repo (or no repo at all) for its actual notes. The two never
@@ -30,7 +34,7 @@ share a git history, a remote, or a content folder. This means:
   editing rule) in one place, and pull that improvement into every wiki you
   maintain — without ever risking cross-contamination of private content.
 - Different wikis can adopt the standard at different times, skip an update,
-  or diverge locally (see `CLAUDE.md`'s note on local overrides) without
+  or diverge locally (see `AGENT.md`'s note on local overrides) without
   breaking the shared repo or each other.
 - The shared repo can eventually be made public, shared with collaborators,
   or open-sourced without a content audit, because it never contained content
@@ -51,10 +55,17 @@ git clone <PRIVATE_REPO_URL> ~/Projects/wiki-standard
 ~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
 ```
 
-The install script copies in `CLAUDE.md`, `conventions/`, `templates/`,
-`scripts/check-standard.sh`, and `scripts/lint-content.sh` — and only those.
-It never touches any other folder in the target wiki, so your actual notes
-are completely untouched by every install and every future update.
+The install script derives its exact scope from
+`.wiki-standard.json` → `ownership.standard`. It installs the profile, neutral
+agent contract, discovery adapters, conventions, templates, and deterministic
+tools—and only those declared paths. It never touches any other target path,
+so actual notes remain untouched by every install and update.
+
+Preview the exact scope before writing:
+
+```bash
+~/Projects/wiki-standard/scripts/install-standard.sh --dry-run /path/to/my-vault
+```
 
 ## How Updates Propagate
 
@@ -72,7 +83,7 @@ Re-running the install script is always safe:
 - It's **idempotent** — running it twice with no upstream changes is a no-op
   beyond refreshing the version marker.
 - It **never silently overwrites local drift**. If the target wiki's copy of
-  `CLAUDE.md` or `templates/` has been hand-edited and differs from what's
+  `AGENT.md`, an adapter, or `templates/` has been hand-edited and differs from what's
   about to be installed, the existing files are backed up first (to a
   timestamped `.wiki-standard-backup-<timestamp>/` folder inside the wiki)
   before the new version is written.
@@ -84,8 +95,20 @@ Re-running the install script is always safe:
   the standard a wiki is running when the source version is available.
 
 Run `scripts/check-standard.sh /path/to/my-vault` at any time to verify a
-wiki's copy of the standard hasn't drifted or gone missing anything, without
-needing to re-install.
+workspace's profile infrastructure hasn't drifted or gone missing anything,
+without needing to re-install. This does not claim that the workspace root is
+an OKF bundle.
+
+Run `scripts/check-okf.sh /path/to/content-bundle` to validate the minimum OKF
+v0.2 document contract at an explicit content boundary. Keeping profile
+infrastructure outside that boundary avoids misclassifying `AGENT.md`,
+templates, and conventions as knowledge concepts.
+
+The ownership convention defaults every undeclared workspace path to protected
+content. An optional workspace-owned `.wiki-standard.local.json` can identify
+explicit `bundle_roots`, `implementation_owned`, and `generated` paths without
+expanding installer authority. It may also declare `trusted_instructions`;
+ordinary notes remain data. See `conventions/ownership.md`.
 
 Run `scripts/lint-content.sh /path/to/my-vault` at Consolidate time to check
 the wiki's actual *content* — orphan notes, broken `[[links]]`, notes stale
@@ -96,14 +119,13 @@ anything.
 ## Quick Start (Adopting the Standard)
 
 1. Clone this repo somewhere stable, e.g. `~/Projects/wiki-standard`.
-2. Pick the wiki you want to adopt it into — any directory of markdown
-   notes, Obsidian vault or otherwise.
+2. Pick the Markdown knowledge workspace you want to adopt it into.
 3. Run:
    ```bash
    ~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
    ```
-4. Read the installed `CLAUDE.md` in your vault — it's written for both you
-   and any LLM agent working in that vault, and explains the folder layout,
+4. Read the installed `AGENT.md` in your vault—it is written for both you
+   and any software agent working in that vault, and explains the folder layout,
    naming/metadata/linking rules, and the capture → clarify → connect →
    consolidate → archive note lifecycle.
 5. Start writing notes using the templates in `templates/` as your starting
@@ -111,26 +133,34 @@ anything.
    meant to be referenced live).
 6. Periodically pull updates (see "How Updates Propagate" above).
 
-## Claude Code Skill
+## Optional Adapters
 
-`skills/wiki-standard-adopt/SKILL.md` wraps the adoption flow above as a
-Claude Code skill: point it at a target wiki and it inspects the vault,
+`skills/wiki-standard-adopt/SKILL.md` wraps the adoption flow in the common
+skill-directory shape used by several agent runtimes. Point it at a target wiki and it inspects the vault,
 identifies content folders (so it knows what never to touch), runs the
-installer, backs up any conflicting pre-existing `CLAUDE.md`/`templates/`,
-and commits the change as a single commit if the target is a git repo.
+installer, backs up conflicting standard infrastructure, and verifies scope.
+It commits only when explicitly asked.
 
-To use it, copy the skill into your Claude Code skills directory:
+Install or register that adapter according to the runtime's skill-loading
+mechanism. For example, a runtime that discovers `~/.claude/skills/` can use:
 
 ```bash
 cp -R skills/wiki-standard-adopt ~/.claude/skills/
 ```
 
-Then trigger it in a Claude Code session with something like "adopt
-wiki-standard into this vault."
+Then ask the runtime to "adopt wiki-standard into this vault." This path is
+optional: running `scripts/install-standard.sh` directly is the canonical
+workflow and has no agent-runtime dependency.
+
+`AGENTS.md` and `CLAUDE.md` are also adapters. They contain no independent
+policy; `AGENT.md` and `WIKI_PROFILE.md` remain authoritative.
 
 ## What This Repo Is Not
 
-- Not a wiki itself — there's no example content, no sample vault.
+- Not a wiki itself—there is no example content or sample vault.
 - Not a sync tool — it doesn't watch, sync, or manage your actual notes.
 - Not opinionated about *what* you write about — only about the shape and
   lifecycle conventions around how you write it.
+- Not an agent framework, editor plugin, retrieval engine, or storage format
+  beyond its OKF v0.2-compatible Markdown contract. Those are implementation
+  choices and may provide adapters without redefining the standard.

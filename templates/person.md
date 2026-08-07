@@ -1,9 +1,11 @@
 ---
 title: 
+description:
 type: person
 created: 
 updated: 
 status: draft
+workflow_stage: capture
 tags: []
 aliases: []
 ---
@@ -33,8 +35,8 @@ dated bullet points rather than prose.
 
 ## Related Notes
 
-- [[Related Project]] — their involvement
-- [[Related Person]] — how they connect
+- [Related Project](relative/project.md) — their involvement
+- [Related Person](relative/person.md) — how they connect
 
 ## Unverified
 

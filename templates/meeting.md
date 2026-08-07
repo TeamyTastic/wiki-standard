@@ -1,9 +1,11 @@
 ---
 title: 
+description:
 type: meeting
 created: 
 updated: 
 status: draft
+workflow_stage: capture
 tags: []
 aliases: []
 ---
@@ -12,8 +14,8 @@ aliases: []
 
 ## Attendees
 
-- [[Person A]]
-- [[Person B]]
+- [Person A](relative/person-a.md)
+- [Person B](relative/person-b.md)
 
 ## Purpose
 
@@ -28,7 +30,7 @@ other note types since meeting notes are time-bound (see
 
 ## Decisions Made
 
-- Decision one — link to a dedicated [[Decision Note]] if it's significant
+- Decision one — link to a dedicated [Decision Note](relative/decision.md) if it's significant
   enough to warrant its own note; otherwise state it here directly.
 
 ## Action Items
@@ -42,5 +44,5 @@ Anything left unresolved that needs a future conversation or piece of work.
 
 ## Related Notes
 
-- [[Related Project]]
-- [[Related Person]]
+- [Related Project](relative/project.md)
+- [Related Person](relative/person.md)

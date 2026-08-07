@@ -16,11 +16,10 @@ missing input validation, and false-positive lint reports.
 
 ### 1. Self-links are NOT broken links
 
-Do NOT flag a wikilink as broken when the link target matches the file that contains it.
-Self-links (`[[Note Name]]` inside `note-name.md`) are legal and intentional — they arise
-from templates and copy-paste. Any link-checker must track self-references separately and
-exclude them from the BROKEN_LINKS output entirely. A false positive here pollutes every
-Consolidate-stage report.
+Do NOT flag a Markdown link or legacy wikilink as broken when the target
+matches the file that contains it. Self-links (`[Note](note.md)` or
+`[[Note]]` inside `note.md`) are legal and intentional. Any link checker must
+track self-references separately and exclude them from broken-link output.
 
 Applies to: `scripts/lint-content.sh` — any awk/grep block that classifies unresolved links.
 

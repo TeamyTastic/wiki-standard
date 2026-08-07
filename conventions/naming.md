@@ -20,12 +20,10 @@ require constant quoting and break some tooling; underscores read fine but
 mixing the two conventions across a wiki creates inconsistency that compounds
 over time.
 
-Wikilink *display* text (`[[Growth Strategy 2026]]`) can and should use
-normal spacing and capitalization — the naming convention governs the
-underlying filename, not what's shown when you link to it. Keep the target
-resolvable regardless of how it's typed by relying on your wiki tool's
-fuzzy-match / alias support where available; otherwise, be consistent about
-which form is canonical.
+Markdown link labels (`[Growth Strategy 2026](/growth-strategy-2026.md)`) can
+and should use normal spacing and capitalization. The naming convention
+governs the target filename, not the visible label. Link to the actual path;
+do not depend on an editor's fuzzy matching for portable relationships.
 
 ## Disambiguation for Duplicate Concepts
 
