@@ -1,9 +1,11 @@
 ---
 title: 
+description:
 type: project
 created: 
 updated: 
 status: draft
+workflow_stage: capture
 tags: []
 aliases: []
 ---
@@ -24,13 +26,13 @@ in maintenance."
 
 ## Key People
 
-- [[Person A]] — role on this project
-- [[Person B]] — role on this project
+- [Person A](relative/person-a.md) — role on this project
+- [Person B](relative/person-b.md) — role on this project
 
 ## Decisions
 
-- [[Decision Note A]] — one-line summary of what was decided
-- [[Decision Note B]]
+- [Decision Note A](relative/decision-a.md) — one-line summary of what was decided
+- [Decision Note B](relative/decision-b.md)
 
 ## Timeline
 
@@ -43,8 +45,8 @@ Things unresolved that could affect the project's outcome.
 
 ## Related Notes
 
-- [[Related Concept]]
-- [[Related Project]]
+- [Related Concept](relative/concept.md)
+- [Related Project](relative/project.md)
 
 ## Retrospective
 

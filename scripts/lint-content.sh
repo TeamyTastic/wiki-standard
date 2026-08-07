@@ -6,15 +6,13 @@
 # script inspects the wiki's actual CONTENT and reports:
 #
 #   - Orphan notes    — nothing anywhere in the wiki links to them
-#   - Broken links    — a [[wikilink]] target that resolves to no note
+#   - Broken links    — a Markdown or legacy link target that resolves to no note
 #   - Stale notes     — `updated` (or `created`) older than --stale-months
-#                       (default 18, per the llm-wiki-compiler convention)
+#                       (default 18 months)
 #   - Open conflicts  — notes with an unresolved `## Conflicts` heading
 #   - Missing links   — note pairs sharing 2+ tags with no link either way
-#                       (a proxy for "shared source, no mutual link"; this
-#                       standard's `source` field is a single scalar, not a
-#                       list, so tag-overlap is used instead of citation
-#                       overlap — see conventions/metadata.md)
+#                       (a conservative relationship hint; structured
+#                       provenance is not treated as navigation)
 #
 # This is a REPORT-ONLY tool intended for the Consolidate lifecycle stage.
 # It does not edit, move, merge, or delete anything.
@@ -27,8 +25,9 @@
 # unflagged contradiction on its own.
 #
 # Directories excluded from linting (shared-asset or non-content):
-#   conventions/ templates/ scripts/ _archive/ _staging/ .git/ .obsidian/
-# Root files excluded: CLAUDE.md, README.md, log.md, .wiki-standard-version
+#   conventions/ templates/ scripts/ skills/ _archive/ _staging/, hidden dirs
+# Root files excluded: profile/agent infrastructure, README.md, SCAN_SPEC.md,
+# log.md, and .wiki-standard-version
 #
 # _archive/ and _staging/ files are excluded from the lint TARGET set (an
 # archived note isn't expected to have live inbound links; a staged note
@@ -94,6 +93,7 @@ if [ ! -d "$TARGET_DIR_ARG" ]; then
   exit 1
 fi
 TARGET_DIR="$(cd "$TARGET_DIR_ARG" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -107,10 +107,61 @@ TAGROWS="${WORKDIR}/tagrows.tsv"          # relpath \t tag
 : > "$LINKS"
 : > "$TAGROWS"
 
+LOCAL_OWNERSHIP_ROOTS="${WORKDIR}/local_ownership_roots.txt"
+: > "$LOCAL_OWNERSHIP_ROOTS"
+LOCAL_MANIFEST="${TARGET_DIR}/.wiki-standard.local.json"
+MANIFEST_READER="${SCRIPT_DIR}/manifest-paths.sh"
+
+if [ -f "$LOCAL_MANIFEST" ]; then
+  if [ ! -f "$MANIFEST_READER" ]; then
+    echo "Warning: local ownership manifest found but manifest reader is missing." >&2
+  else
+    # shellcheck source=manifest-paths.sh
+    source "$MANIFEST_READER"
+    if [ "$(wiki_standard_manifest_integer "$LOCAL_MANIFEST" manifest_version 2>/dev/null || true)" != "1" ]; then
+      echo "Warning: ignoring unsupported or malformed local ownership manifest." >&2
+    else
+      for ownership_key in implementation_owned generated; do
+        if ownership_values="$(wiki_standard_manifest_array "$LOCAL_MANIFEST" "$ownership_key" 2>/dev/null)"; then
+          :
+        else
+          ownership_status="$?"
+          if [ "$ownership_status" -eq 3 ]; then
+            continue
+          fi
+          echo "Warning: ignoring malformed '$ownership_key' in local ownership manifest." >&2
+          continue
+        fi
+        while IFS= read -r ownership_path; do
+          [ -z "$ownership_path" ] && continue
+          if wiki_standard_validate_relative_path "$ownership_path"; then
+            printf '%s\n' "${ownership_path%/}" >> "$LOCAL_OWNERSHIP_ROOTS"
+          else
+            echo "Warning: ignoring unsafe local ownership path '$ownership_path'." >&2
+          fi
+        done <<< "$ownership_values"
+      done
+    fi
+  fi
+fi
+
+is_locally_owned_rel() {
+  local rel="$1"
+  local root
+  while IFS= read -r root; do
+    [ -z "$root" ] && continue
+    case "$rel" in
+      "$root"|"$root"/*) return 0 ;;
+    esac
+  done < "$LOCAL_OWNERSHIP_ROOTS"
+  return 1
+}
+
 is_excluded_rel() {
+  is_locally_owned_rel "$1" && return 0
   case "$1" in
-    conventions/*|templates/*|scripts/*|_archive/*|_staging/*|.git/*|.obsidian/*|node_modules/*|.wiki-standard-backup-*/*) return 0 ;;
-    CLAUDE.md|README.md|log.md) return 0 ;;
+    conventions/*|templates/*|scripts/*|skills/*|_archive/*|_staging/*|node_modules/*|.*/*|*/.*/*|.wiki-standard-backup-*/*) return 0 ;;
+    AGENT.md|AGENTS.md|CLAUDE.md|WIKI_PROFILE.md|README.md|SCAN_SPEC.md|log.md) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -196,7 +247,11 @@ while IFS= read -r rel; do
     printf '%s\t%s\t%s\t%s\t%s\n' "$rel" "$base" "$title" "$effective_date" "$status" >> "$MANIFEST"
   fi
 
-  # Candidate names this note can be linked BY (basename, title, aliases)
+  # Candidate names this note can be linked by (path, id, basename, title, aliases).
+  printf '%s\t%s\n' "$rel" "$rel" >> "$CANDIDATES"
+  printf '%s\t/%s\n' "$rel" "$rel" >> "$CANDIDATES"
+  printf '%s\t%s\n' "$rel" "${rel%.md}" >> "$CANDIDATES"
+  printf '%s\t/%s\n' "$rel" "${rel%.md}" >> "$CANDIDATES"
   printf '%s\t%s\n' "$rel" "$base" >> "$CANDIDATES"
   if [ -n "$title" ]; then
     printf '%s\t%s\n' "$rel" "$title" >> "$CANDIDATES"
@@ -223,7 +278,7 @@ while IFS= read -r rel; do
     fi
   fi
 
-  # Wikilinks found in this file's body: [[Target]] or [[Target|Alias]]
+  # Legacy wikilinks found in this file's body: [[Target]] or [[Target|Alias]].
   # grep exits 1 (no match) for any note with zero wikilinks — a normal,
   # expected case, not a real failure — so it's explicitly caught here
   # rather than letting `pipefail` + `set -e` kill the whole script on the
@@ -235,10 +290,43 @@ while IFS= read -r rel; do
       [ -n "$tgt_trimmed" ] && printf '%s\t%s\n' "$rel" "$tgt_trimmed" >> "$LINKS"
     done <<< "$wikilinks_raw"
   fi
+
+  # Portable Markdown links: [label](/path.md) or [label](../path.md).
+  # Images, external URIs, and same-document fragments are not concept edges.
+  markdown_targets="$(grep -oE '(^|[^!])\[[^][]+\]\([^)]*\)' "$file" 2>/dev/null |
+    sed -E 's/^[^[]*//; s/^[^]]*\]\(//; s/\)$//; s/[[:space:]]+"[^"]*"$//' || true)"
+  if [ -n "$markdown_targets" ]; then
+    while IFS= read -r target; do
+      target="${target#<}"; target="${target%>}"
+      target="${target%%\#*}"; target="${target%%\?*}"
+      target="${target//%20/ }"
+      case "$target" in
+        ''|'#'*|*://*|mailto:*|data:*) continue ;;
+      esac
+      if [[ "$target" == /* ]]; then
+        candidate="${target#/}"
+      else
+        candidate="$(dirname "$rel")/$target"
+      fi
+      candidate="$(printf '%s\n' "$candidate" | awk -F/ '
+        {
+          count = 0
+          for (i = 1; i <= NF; i++) {
+            if ($i == "" || $i == ".") continue
+            if ($i == "..") { if (count > 0) count--; continue }
+            parts[++count] = $i
+          }
+          for (i = 1; i <= count; i++) printf "%s%s", (i > 1 ? "/" : ""), parts[i]
+          print ""
+        }
+      ')"
+      [ -n "$candidate" ] && printf '%s\t%s\n' "$rel" "$candidate" >> "$LINKS"
+    done <<< "$markdown_targets"
+  fi
 done < "$ALL_MD_FILES"
 
 # External roots (optional): $TARGET_DIR/.lint-external-roots lists directories
-# OUTSIDE this bundle whose notes are valid wikilink targets — e.g. when the
+# OUTSIDE this bundle whose notes are valid link targets—for example, when the
 # bundle is mounted inside a larger vault and links resolve vault-wide.
 # One path per line, ~ allowed, blank lines and #-comments ignored.
 # External notes contribute link-target CANDIDATES only: they are never
@@ -322,12 +410,12 @@ echo ""
 
 # --- Report: Broken links (from content notes only) ---
 
-echo "## Broken links (wikilink target resolves to no note in the wiki)"
+echo "## Broken links (target resolves to no concept in the bundle)"
 BROKEN_COUNT=0
 if [ -s "$BROKEN_LINKS" ]; then
   while IFS=$'\t' read -r src tgt; do
     is_content_rel "$src" || continue
-    printf '  [RED LINK]  %s -> [[%s]]\n' "$src" "$tgt"
+    printf '  [RED LINK]  %s -> %s\n' "$src" "$tgt"
     BROKEN_COUNT=$((BROKEN_COUNT + 1))
   done < "$BROKEN_LINKS"
 fi

@@ -1,9 +1,11 @@
 ---
 title: 
+description:
 type: decision
 created: 
 updated: 
 status: draft
+workflow_stage: capture
 tags: []
 aliases: []
 ---
@@ -33,8 +35,8 @@ you (or an agent) needs when re-evaluating whether the decision still holds.
 
 ## Who Was Involved
 
-- [[Person A]]
-- [[Person B]]
+- [Person A](relative/person-a.md)
+- [Person B](relative/person-b.md)
 
 ## Consequences / Follow-Ups
 
@@ -49,5 +51,5 @@ editing it in place to reflect the new decision.
 
 ## Related Notes
 
-- [[Related Project]]
-- [[Related Decision]]
+- [Related Project](relative/project.md)
+- [Related Decision](relative/decision.md)
