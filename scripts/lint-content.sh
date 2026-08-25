@@ -283,14 +283,19 @@ awk -F'\t' '
     if (tgt in cand) {
       n = split(cand[tgt], owners, "\x1f")
       matched = 0
+      self_match = 0
       for (i=1; i<=n; i++) {
-        if (owners[i] != "" && owners[i] != $1) {
+        if (owners[i] == "") { continue }
+        if (owners[i] == $1) { self_match = 1 }
+        else {
           print $1"\t"owners[i] >> "'"$RESOLVED_LINKS"'"
           print owners[i] >> "'"$LINKED_RELPATHS"'"
           matched = 1
         }
       }
-      if (!matched) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
+      # Only report as broken if no candidate resolved — a self-only match
+      # means the link target exists (as the note itself) and is not broken.
+      if (!matched && !self_match) print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     } else {
       print $1"\t"$2 >> "'"$BROKEN_LINKS"'"
     }
