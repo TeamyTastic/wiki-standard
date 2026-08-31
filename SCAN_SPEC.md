@@ -120,3 +120,43 @@ directly. Only assign a lower confidence score when the finding is genuinely *ne
 and has no matching spec entry.
 
 Applies to: the scanner's scoring and reporting phase for all findings.
+
+---
+
+## Improvements (2026-08-25)
+
+### 7. Variable semantics in lint-content.sh awk link-checking blocks
+
+In `scripts/lint-content.sh`, the awk link-checking pass uses these conventions:
+
+- `$1` — the **current file path** being processed (the file that contains the wikilink)
+- `owners[i]` — the **file that owns candidate `i`** (i.e. the file whose basename matches
+  the link target slug)
+- The comparison `owners[i] != $1` therefore means: "this candidate is a file *other than*
+  the file currently being checked"
+
+When evaluating any change to link-resolution logic in this script, treat a
+`matched == 0 after the owner loop` result as "no external file matched" — which
+is the broken-link signal. Do NOT conflate it with "no file at all matched":
+a self-match (where `owners[i] == $1`) increments a separate counter and must
+not contribute to `matched`. If the only candidate is the file itself, the link
+is a self-link (covered by Improvement #1 above) and is NOT broken.
+
+Applies to: any awk block in `scripts/lint-content.sh` that walks a candidates
+array to set `matched`.
+
+### 8. Broken-link detection must minimise false positives
+
+Precision (don't flag valid links as broken) is more important than recall
+(don't miss genuinely broken links) for the broken-link check in
+`scripts/lint-content.sh`. A false positive appears in every downstream
+Consolidate-stage report and erodes trust in the tool; a false negative is
+invisible until someone follows the link manually.
+
+Decision rule: when a code path is ambiguous — the link might be broken, or
+might be valid by a convention not yet understood — default to NOT flagging it
+as broken and flag it as a REVIEW-level finding for the human instead. Do NOT
+AUTOFIX a false-positive removal unless there is positive evidence (not just
+absence of counter-evidence) that the link is broken.
+
+Applies to: all link-classification logic in `scripts/lint-content.sh`.
