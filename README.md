@@ -1,135 +1,222 @@
 # wiki-standard
 
-A small, evolving repo of **shared operating-model assets** for independent
-personal markdown wikis (Obsidian-style vaults, or any plain-markdown
-knowledge base). It contains conventions, templates, an agent operating
-manual, scripts, and an optional Claude Code skill — and nothing else. No
-personal notes, no private content, ever.
+A portable operating profile for Markdown knowledge workspaces.
 
-## Philosophy: Shared Operating Model, Independent Content
+wiki-standard gives people and software agents one shared contract for naming,
+metadata, linking, provenance, safe editing, and knowledge lifecycle—without
+requiring a particular editor, model, agent runtime, storage service, or
+automation product.
 
-Most "wiki template" projects couple the operating model (how you name
-things, structure frontmatter, link notes) to the content itself — you fork a
-vault, and your notes live forever entangled with someone else's example
-content and someone else's git history.
+It installs operating infrastructure only. Your notes remain independent and
+under your control.
 
-wiki-standard inverts that. It is a single, small repo containing **only**:
+## User story
 
-- `CLAUDE.md` — how an LLM agent should behave inside a wiki
-- `conventions/` — the rules (naming, metadata, linking, editing)
-- `templates/` — starting shapes for each note type
-- `scripts/` — install and verify tooling
-- `skills/wiki-standard-adopt/` — an optional Claude Code skill that wraps
-  the adoption flow (see "Claude Code Skill" below)
+> As a knowledge-workspace owner, I want to adopt and update one operating
+> model without changing my content, so I can move between editors, models,
+> and agent runtimes without migrating or locking in my notes.
 
-It contains **zero content**. Every wiki that adopts this standard keeps its
-own private repo (or no repo at all) for its actual notes. The two never
-share a git history, a remote, or a content folder. This means:
+## Guarantees
 
-- You can evolve the standard (fix a naming rule, add a template, tighten an
-  editing rule) in one place, and pull that improvement into every wiki you
-  maintain — without ever risking cross-contamination of private content.
-- Different wikis can adopt the standard at different times, skip an update,
-  or diverge locally (see `CLAUDE.md`'s note on local overrides) without
-  breaking the shared repo or each other.
-- The shared repo can eventually be made public, shared with collaborators,
-  or open-sourced without a content audit, because it never contained content
-  in the first place.
+- **Runtime neutral:** [`AGENT.md`](AGENT.md) is canonical. `AGENTS.md` and
+  `CLAUDE.md` are thin discovery adapters with no independent policy.
+- **Content safe:** undeclared workspace paths default to protected content.
+- **Previewable:** every adoption can be inspected with `--dry-run`.
+- **Recoverable:** conflicting standard infrastructure is backed up before it
+  is replaced.
+- **Explicitly owned:** [`.wiki-standard.json`](.wiki-standard.json) is the
+  machine-readable authority for installation and generated state.
+- **Portable:** concept documents follow the
+  [Open Knowledge Format v0.2 profile](conventions/okf.md), with standard
+  Markdown links and structured provenance.
+- **Trust bounded:** ordinary notes and imported material are data, not agent
+  instructions.
 
-One evolving shared operating model. Many independent knowledge bases.
+## Quick start
 
-## How It's Consumed
+Requirements: Bash 3.2 or newer and standard Unix command-line tools. Git is
+used to clone and update the source checkout and to record an exact installed
+revision when available.
 
-wiki-standard is not something you clone *as* your wiki. You clone it
-separately, then run its install script against each wiki you maintain:
+Clone the standard separately from the workspace that contains your notes:
 
 ```bash
-# once, anywhere convenient
-git clone <PRIVATE_REPO_URL> ~/Projects/wiki-standard
-
-# for each wiki that should adopt the standard
-~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
+git clone https://github.com/TeamyTastic/wiki-standard.git
+cd wiki-standard
+STANDARD_DIR="$PWD"
 ```
 
-The install script copies in `CLAUDE.md`, `conventions/`, `templates/`,
-`scripts/check-standard.sh`, and `scripts/lint-content.sh` — and only those.
-It never touches any other folder in the target wiki, so your actual notes
-are completely untouched by every install and every future update.
-
-## How Updates Propagate
-
-The standard evolves over time in this repo (new conventions, refined
-templates, bug fixes to scripts). To pull an update into a wiki that already
-adopted the standard:
+Preview the exact adoption scope:
 
 ```bash
-cd ~/Projects/wiki-standard && git pull
-~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
+bash "$STANDARD_DIR/scripts/install-standard.sh" --dry-run /path/to/workspace
 ```
 
-Re-running the install script is always safe:
-
-- It's **idempotent** — running it twice with no upstream changes is a no-op
-  beyond refreshing the version marker.
-- It **never silently overwrites local drift**. If the target wiki's copy of
-  `CLAUDE.md` or `templates/` has been hand-edited and differs from what's
-  about to be installed, the existing files are backed up first (to a
-  timestamped `.wiki-standard-backup-<timestamp>/` folder inside the wiki)
-  before the new version is written.
-- It writes/updates a `.wiki-standard-version` file at the root of the
-  target wiki, containing the exact git commit hash of wiki-standard that
-  was installed. This is how you (or `scripts/check-standard.sh`) can tell
-  which version of the standard any given wiki is running, and whether it's
-  behind.
-
-Run `scripts/check-standard.sh /path/to/my-vault` at any time to verify a
-wiki's copy of the standard hasn't drifted or gone missing anything, without
-needing to re-install.
-
-Run `scripts/lint-content.sh /path/to/my-vault` at Consolidate time to check
-the wiki's actual *content* — orphan notes, broken `[[links]]`, notes stale
-past a configurable age, unresolved `## Conflicts` sections, and note pairs
-sharing tags with no link between them. It's report-only; it never edits
-anything.
-
-## Quick Start (Adopting the Standard)
-
-1. Clone this repo somewhere stable, e.g. `~/Projects/wiki-standard`.
-2. Pick the wiki you want to adopt it into — any directory of markdown
-   notes, Obsidian vault or otherwise.
-3. Run:
-   ```bash
-   ~/Projects/wiki-standard/scripts/install-standard.sh /path/to/my-vault
-   ```
-4. Read the installed `CLAUDE.md` in your vault — it's written for both you
-   and any LLM agent working in that vault, and explains the folder layout,
-   naming/metadata/linking rules, and the capture → clarify → connect →
-   consolidate → archive note lifecycle.
-
-## Claude Code Skill
-
-`skills/wiki-standard-adopt/SKILL.md` wraps the adoption flow above as a
-Claude Code skill: point it at a target wiki and it inspects the vault,
-identifies content folders (so it knows what never to touch), runs the
-installer, backs up any conflicting pre-existing `CLAUDE.md`/`templates/`,
-and commits the change as a single commit if the target is a git repo.
-
-To use it, copy the skill into your Claude Code skills directory:
+Install after reviewing the preview:
 
 ```bash
-cp -R skills/wiki-standard-adopt ~/.claude/skills/
+bash "$STANDARD_DIR/scripts/install-standard.sh" /path/to/workspace
 ```
 
-Then trigger it in a Claude Code session with something like "adopt
-wiki-standard into this vault."
-5. Start writing notes using the templates in `templates/` as your starting
-   point (copy the template content into a new note — templates are not
-   meant to be referenced live).
-6. Periodically pull updates (see "How Updates Propagate" above).
+Verify the installed profile:
 
-## What This Repo Is Not
+```bash
+bash /path/to/workspace/scripts/check-standard.sh \
+  /path/to/workspace "$STANDARD_DIR"
+```
 
-- Not a wiki itself — there's no example content, no sample vault.
-- Not a sync tool — it doesn't watch, sync, or manage your actual notes.
-- Not opinionated about *what* you write about — only about the shape and
-  lifecycle conventions around how you write it.
+The installer never migrates, rewrites, moves, or normalizes content. Content
+migration is a separate operation requiring explicit authorization.
+
+## What adoption installs
+
+The installer derives its scope from
+`.wiki-standard.json` → `ownership.standard`; documentation and scripts do not
+maintain competing authoritative path lists.
+
+| Path | Purpose |
+|---|---|
+| `.wiki-standard.json` | Versioned ownership and installation manifest |
+| `WIKI_PROFILE.md` | Normative Profile v1 contract |
+| `AGENT.md` | Runtime-neutral operating instructions |
+| `AGENTS.md`, `CLAUDE.md` | Compatibility discovery adapters |
+| `conventions/` | Naming, metadata, linking, ownership, OKF, and editing rules |
+| `templates/` | Optional starting shapes for common concept types |
+| `scripts/` | Installation, drift, bundle, manifest, and content-health checks |
+
+The installer also writes `.wiki-standard-version`. When an installed standard
+path differs from the incoming version, its previous value is copied into a
+timestamped `.wiki-standard-backup-*` directory before replacement.
+
+Everything else remains workspace-owned content or local implementation state.
+
+## Ownership and local declarations
+
+The default ownership rule is deliberately conservative:
+
+```text
+declared standard path  → wiki-standard may install or update it
+declared generated path → profile or local implementation state
+undeclared path         → protected content
+```
+
+A workspace may add `.wiki-standard.local.json` to refine local ownership
+without expanding installer authority:
+
+```json
+{
+  "manifest_version": 1,
+  "bundle_roots": [
+    "notes"
+  ],
+  "implementation_owned": [
+    ".index"
+  ],
+  "generated": [
+    "exports"
+  ],
+  "trusted_instructions": [
+    "LOCAL_AGENT.md"
+  ]
+}
+```
+
+Paths are workspace-relative literals. Declared directories cover their
+descendants. Absolute paths, parent traversal, and globs are not accepted.
+See [the ownership convention](conventions/ownership.md) for the complete
+contract.
+
+## Workspace profile versus OKF bundle
+
+An adopted workspace is not automatically one OKF bundle. Profile
+infrastructure such as `AGENT.md`, templates, and scripts is not knowledge
+content.
+
+Use a dedicated content directory as the bundle root, or export concepts into
+a clean bundle. Validate that explicit boundary separately:
+
+```bash
+bash /path/to/workspace/scripts/check-okf.sh /path/to/workspace/notes
+```
+
+This separation keeps three different questions honest:
+
+1. Is the wiki-standard profile installed and unmodified?
+2. Does each concept document meet the portable minimum?
+3. Is this explicitly selected directory a valid minimum OKF document set?
+
+## Knowledge lifecycle
+
+The operating model uses five stages:
+
+```text
+capture → clarify → connect → consolidate → archive
+```
+
+- **Capture:** preserve the raw thought, fact, reference, or synthesis.
+- **Clarify:** type and structure it; flag uncertainty rather than hiding it.
+- **Connect:** add useful standard Markdown relationships.
+- **Consolidate:** review duplicates, drift, broken links, and conflicts.
+- **Archive:** retire knowledge without silently deleting it.
+
+Read [`AGENT.md`](AGENT.md) for the actionable criteria and
+[`conventions/editing-rules.md`](conventions/editing-rules.md) for the
+archive-before-replace policy.
+
+## Checks
+
+All bundled tools are deterministic and report-only unless explicitly named
+as the installer.
+
+```bash
+# Profile infrastructure presence and drift
+bash "$STANDARD_DIR/scripts/check-standard.sh" \
+  /path/to/workspace "$STANDARD_DIR"
+
+# Minimum OKF contract at an explicit content boundary
+bash "$STANDARD_DIR/scripts/check-okf.sh" /path/to/workspace/notes
+
+# Orphans, broken links, stale notes, conflicts, and connection suggestions
+bash "$STANDARD_DIR/scripts/lint-content.sh" /path/to/workspace
+```
+
+The content linter understands standard Markdown links and compatible legacy
+wikilinks. It reports findings for review; it never edits notes.
+
+## Updating an adopted workspace
+
+```bash
+git -C "$STANDARD_DIR" pull --ff-only
+bash "$STANDARD_DIR/scripts/install-standard.sh" --dry-run /path/to/workspace
+bash "$STANDARD_DIR/scripts/install-standard.sh" /path/to/workspace
+```
+
+Re-running the installer is idempotent. Local differences in standard-owned
+paths are backed up; undeclared content paths remain outside installation
+scope.
+
+## Optional adapters
+
+[`skills/wiki-standard-adopt/SKILL.md`](skills/wiki-standard-adopt/SKILL.md)
+wraps the canonical adoption flow in the common Agent Skills directory shape.
+Register it using the chosen runtime's skill-loading mechanism, or invoke
+`scripts/install-standard.sh` directly. The shell installer remains the
+runtime-independent write path.
+
+Product-, editor-, or runtime-specific integrations are adapters. They may
+discover `AGENT.md`, invoke the installer, or render content, but they do not
+redefine profile conformance.
+
+## Repository contents
+
+This repository contains the operating model and its tests—no personal notes,
+example vault, or private content. Each adopting workspace keeps its own
+storage, history, access controls, and content structure.
+
+## Non-goals
+
+- synchronizing or hosting notes;
+- prescribing what subjects you write about;
+- choosing an editor, model, runtime, indexer, or retrieval engine;
+- treating the whole workspace root as an OKF bundle;
+- migrating content during profile adoption.

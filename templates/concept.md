@@ -1,9 +1,11 @@
 ---
 title: 
+description:
 type: concept
 created: 
 updated: 
 status: draft
+workflow_stage: capture
 tags: []
 aliases: []
 ---
@@ -26,8 +28,8 @@ changes about how you think or act.
 
 ## Related Concepts
 
-- [[Related Concept A]] — how it relates
-- [[Related Concept B]] — how it relates
+- [Related Concept A](relative/path-a.md) — how it relates
+- [Related Concept B](relative/path-b.md) — how it relates
 
 ## Examples
 
@@ -37,6 +39,7 @@ Concrete instance(s) of this concept in practice.
 
 Anything unresolved or worth revisiting about this concept.
 
-## Sources
+## Provenance Notes
 
-Where this understanding came from (book, article, conversation, experience).
+Explain how the listed frontmatter `sources` support this concept. Add
+structured `sources` entries only when the source is known.

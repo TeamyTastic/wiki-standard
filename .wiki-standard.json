@@ -1,0 +1,40 @@
+{
+  "manifest_version": 1,
+  "profile": {
+    "name": "wiki-standard",
+    "version": 1,
+    "base_format": "okf-0.2"
+  },
+  "ownership": {
+    "standard": [
+      ".wiki-standard.json",
+      "WIKI_PROFILE.md",
+      "AGENT.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "conventions",
+      "templates",
+      "scripts/check-standard.sh",
+      "scripts/check-okf.sh",
+      "scripts/lint-content.sh",
+      "scripts/manifest-paths.sh"
+    ],
+    "generated": {
+      "version_marker": ".wiki-standard-version",
+      "backup_pattern": ".wiki-standard-backup-*"
+    },
+    "local_control": [
+      ".wiki-standard.local.json"
+    ],
+    "unmatched": "content"
+  },
+  "local_manifest": {
+    "path": ".wiki-standard.local.json",
+    "supported_arrays": [
+      "bundle_roots",
+      "implementation_owned",
+      "generated",
+      "trusted_instructions"
+    ]
+  }
+}
