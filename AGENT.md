@@ -92,6 +92,12 @@ additive by default, conflicting information is surfaced rather than silently
 resolved, and major rewrites are archived-before-replaced, not overwritten in
 place.
 
+## Capture and Retrieval
+
+Full rules: `conventions/capture-on-demand.md`. The user-driven "save data"
+flow (judge → classify → dedupe → write → commit → report) and the read-only
+rules for answering questions from the wiki.
+
 ## Preserving Information — Never Silently Delete
 
 This is a hard rule, not a preference. An agent must never remove content from
@@ -190,6 +196,13 @@ polish or structure.
   answer to a query that's worth keeping as permanent reference. Promoting a
   synthesized answer to a note is a valid, first-class capture path — treat
   it the same as any other capture, and log the promotion in `log.md`.
+
+**On-demand capture ("save data"):** when the user hands over material and
+asks to save it, follow `conventions/capture-on-demand.md` — judge what is
+worth keeping, classify it, search for duplicates before writing, commit if
+the workspace is a Git repo, and always report what was *not* saved and why.
+That convention also covers meeting transcripts and the read-only retrieval
+rules for questions asked against the wiki.
 
 **Criteria to move to the next stage (Clarify):**
 - The raw capture exists as a file (in `_staging/` if uncertain, or directly

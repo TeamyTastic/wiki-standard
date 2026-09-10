@@ -17,7 +17,8 @@
       "scripts/check-standard.sh",
       "scripts/check-okf.sh",
       "scripts/lint-content.sh",
-      "scripts/manifest-paths.sh"
+      "scripts/manifest-paths.sh",
+      "scripts/update-adopters.sh"
     ],
     "generated": {
       "version_marker": ".wiki-standard-version",
@@ -34,7 +35,8 @@
       "bundle_roots",
       "implementation_owned",
       "generated",
-      "trusted_instructions"
+      "trusted_instructions",
+      "standard_pinned"
     ]
   }
 }

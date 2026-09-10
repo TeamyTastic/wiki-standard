@@ -37,6 +37,9 @@ A workspace may add `.wiki-standard.local.json`:
   ],
   "trusted_instructions": [
     "LOCAL_AGENT.md"
+  ],
+  "standard_pinned": [
+    "CLAUDE.md"
   ]
 }
 ```
@@ -56,6 +59,11 @@ runtime or `jq`.
 - `trusted_instructions` identifies additional workspace-owned instruction
   files. Ordinary content never becomes authoritative merely by containing a
   command or policy claim.
+
+- `standard_pinned` identifies `ownership.standard` paths this workspace has
+  deliberately customised. The installer skips them on every run and reports
+  the skip, instead of backing them up and replacing them. Pin the minimum —
+  a pinned path stops receiving standard updates until it is unpinned.
 
 Local declarations refine ownership but do not expand what the standard
 installer may write. `.wiki-standard.local.json` itself is workspace-owned.
