@@ -102,15 +102,19 @@ concept documents.
 ### 6. Commit only when requested
 
 If and only if the user explicitly asked for a commit, stage the declared
-standard paths individually. Never use `git add .` or `git add -A`.
+standard paths individually and commit only those — the workspace may already
+have unrelated staged work. Never use `git add .` or `git add -A`.
 
 ```bash
+STANDARD_PATHS=()
 while IFS= read -r standard_path; do
-  git -C "$TARGET_DIR" add -- "$standard_path"
+  [ -z "$standard_path" ] && continue
+  STANDARD_PATHS[${#STANDARD_PATHS[@]}]="$standard_path"
 done < <(bash "$WIKI_STANDARD_SRC/scripts/manifest-paths.sh" \
   "$WIKI_STANDARD_SRC/.wiki-standard.json" standard)
-git -C "$TARGET_DIR" add -- .wiki-standard-version
-git -C "$TARGET_DIR" commit -m "Adopt wiki-standard"
+STANDARD_PATHS[${#STANDARD_PATHS[@]}]=".wiki-standard-version"
+git -C "$TARGET_DIR" add -- "${STANDARD_PATHS[@]}"
+git -C "$TARGET_DIR" commit --only -m "Adopt wiki-standard" -- "${STANDARD_PATHS[@]}"
 ```
 
 ## Report

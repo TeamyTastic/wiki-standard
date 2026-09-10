@@ -104,9 +104,18 @@ commit per "save data", listing the paths touched:
 wiki: save 2 notes (decision/pricing-tiers, 2026-09-10-pricing-review)
 ```
 
-Stage the specific paths written. Never `git add .` or `git add -A` — a
-workspace has content the run did not touch, and an editor may have left
-unrelated work in the tree. Do not push unless the user asked for it.
+Commit the specific paths written, and only those:
+
+```
+git add -- <paths written>
+git commit --only -m "wiki: save 2 notes (...)" -- <paths written>
+```
+
+`git add` is needed because a new note is untracked; `--only` then records
+just those paths whatever else is already staged, so an editor's pre-staged
+work never rides along in a capture commit. Never `git add .` or `git add -A`
+— a workspace has content the run did not touch. Do not push unless the user
+asked for it.
 
 If the workspace is not a Git repository, skip this step silently. Version
 control is not a conformance requirement of this profile.

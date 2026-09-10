@@ -92,14 +92,44 @@ if [ -f "$LOCAL_MANIFEST" ] && [ ! -L "$LOCAL_MANIFEST" ]; then
   fi
 fi
 
+# Pins are descendant-scoped, like every other declared path in this profile:
+# a pinned path covers everything under it, and pinning one file below a
+# directory item pins only that file.
 is_pinned() {
   local candidate="$1" pinned
   for pinned in ${PINNED+"${PINNED[@]}"}; do
-    if [ "$candidate" = "$pinned" ]; then
-      return 0
-    fi
+    case "$candidate" in
+      "$pinned"|"$pinned"/*) return 0 ;;
+    esac
   done
   return 1
+}
+
+has_pinned_descendant() {
+  local candidate="$1" pinned
+  for pinned in ${PINNED+"${PINNED[@]}"}; do
+    case "$pinned" in
+      "$candidate"/*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# Installing a directory item replaces the whole directory, which would delete
+# a file pinned below it. Expand such an item into its children instead, so the
+# pinned path is skipped and its siblings still receive updates.
+expand_item() {
+  local item="$1" child
+  if [ ! -d "${REPO_DIR}/${item}" ] || ! has_pinned_descendant "$item"; then
+    printf '%s\n' "$item"
+    return 0
+  fi
+  while IFS= read -r child; do
+    [ -z "$child" ] && continue
+    expand_item "${child#"${REPO_DIR}/"}"
+  done <<EOF
+$(find "${REPO_DIR}/${item}" -mindepth 1 -maxdepth 1)
+EOF
 }
 
 # Relative paths (from REPO_DIR) installed into the same target paths.
@@ -163,6 +193,17 @@ assert_no_symlink_components() {
   done
   IFS="$old_ifs"
 }
+
+EXPANDED=()
+for item in "${ITEMS[@]}"; do
+  while IFS= read -r expanded; do
+    [ -z "$expanded" ] && continue
+    EXPANDED[${#EXPANDED[@]}]="$expanded"
+  done <<EOF
+$(expand_item "$item")
+EOF
+done
+ITEMS=("${EXPANDED[@]}")
 
 # Refuse rather than follow links that could escape the declared target.
 for item in "${ITEMS[@]}"; do

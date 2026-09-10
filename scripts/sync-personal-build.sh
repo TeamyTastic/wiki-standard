@@ -29,6 +29,27 @@ die() { printf 'SYNC ERROR: %s\n' "$*" >&2; exit 1; }
 BASE_HEAD="$(git rev-parse HEAD)"
 CURRENT_BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || echo DETACHED)"
 
+# --- never propagate an unfinished edit -----------------------------------
+# install-standard.sh copies from the working tree, but the version marker it
+# writes records HEAD. A dirty standard asset would be installed into every
+# adopter while every adopter claimed to be at an unmodified commit.
+# shellcheck source=manifest-paths.sh
+source "${SCRIPT_DIR}/manifest-paths.sh"
+MANIFEST_ITEMS="$(wiki_standard_manifest_array "${REPO_DIR}/.wiki-standard.json" standard)" \
+  || die "cannot read ownership.standard from .wiki-standard.json"
+STANDARD_PATHS=()
+while IFS= read -r item; do
+  [ -z "$item" ] && continue
+  STANDARD_PATHS[${#STANDARD_PATHS[@]}]="$item"
+done <<< "$MANIFEST_ITEMS"
+[ "${#STANDARD_PATHS[@]}" -gt 0 ] || die "ownership.standard is empty"
+
+DIRTY_STANDARD="$(git status --porcelain -- "${STANDARD_PATHS[@]}")"
+if [ -n "$DIRTY_STANDARD" ]; then
+  printf '%s\n' "$DIRTY_STANDARD" >&2
+  die "standard assets have uncommitted changes — commit or stash them before propagating"
+fi
+
 # --- fetch upstream -------------------------------------------------------
 git fetch --tags --quiet "$UPSTREAM_REMOTE" || die "failed to fetch $UPSTREAM_REMOTE"
 REMOTE_CANON="${UPSTREAM_REMOTE}/${BRANCH}"

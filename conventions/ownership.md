@@ -63,7 +63,9 @@ runtime or `jq`.
 - `standard_pinned` identifies `ownership.standard` paths this workspace has
   deliberately customised. The installer skips them on every run and reports
   the skip, instead of backing them up and replacing them. Pin the minimum —
-  a pinned path stops receiving standard updates until it is unpinned.
+  a pinned path stops receiving standard updates until it is unpinned. Pinning
+  one file below a declared directory pins only that file; its siblings in that
+  directory keep receiving updates.
 
 Local declarations refine ownership but do not expand what the standard
 installer may write. `.wiki-standard.local.json` itself is workspace-owned.
