@@ -96,6 +96,50 @@ backup_agent="$(find "$TARGET" -path "*/${BACKUP_PATTERN}/AGENT.md" -type f | he
 grep -q 'local agent policy' "$backup_agent" || fail "backup did not preserve the local value"
 pass "conflicting infrastructure is recoverable"
 
+# A pin below a directory item must survive, without freezing its siblings.
+PIN_TARGET="$TEST_TMP/pin-target"
+mkdir -p "$PIN_TARGET"
+bash "$REPO_DIR/scripts/install-standard.sh" "$PIN_TARGET" >/dev/null
+cat > "$PIN_TARGET/.wiki-standard.local.json" <<'EOF'
+{
+  "manifest_version": 1,
+  "standard_pinned": [
+    "conventions/ownership.md"
+  ]
+}
+EOF
+printf '%s\n' 'workspace-owned ownership rules' > "$PIN_TARGET/conventions/ownership.md"
+printf '%s\n' 'stale' > "$PIN_TARGET/conventions/capture-on-demand.md"
+pin_output="$(bash "$REPO_DIR/scripts/install-standard.sh" "$PIN_TARGET")"
+grep -q 'workspace-owned ownership rules' "$PIN_TARGET/conventions/ownership.md" \
+  || fail "installer replaced a file pinned below a directory item"
+cmp -s "$REPO_DIR/conventions/capture-on-demand.md" "$PIN_TARGET/conventions/capture-on-demand.md" \
+  || fail "installer skipped an unpinned sibling of a pinned file"
+printf '%s\n' "$pin_output" | grep -q 'skipped (pinned by workspace): conventions/ownership.md' \
+  || fail "installer did not report the descendant pin as skipped"
+pass "pins below a directory item are honoured"
+
+# A dirty standard asset must never be propagated to adopters.
+SYNC_REPO="$TEST_TMP/sync-repo"
+mkdir -p "$SYNC_REPO"
+cp -R "$REPO_DIR/." "$SYNC_REPO/"
+rm -rf "$SYNC_REPO/.git"
+git -C "$SYNC_REPO" init --quiet -b main
+git -C "$SYNC_REPO" config user.email test@example.com
+git -C "$SYNC_REPO" config user.name "wiki-standard test"
+git -C "$SYNC_REPO" add -A
+git -C "$SYNC_REPO" commit --quiet -m "test baseline"
+git -C "$SYNC_REPO" remote add origin "$SYNC_REPO"
+mkdir -p "$TEST_TMP/no-adopters"
+printf '%s\n' 'unfinished edit' >> "$SYNC_REPO/AGENT.md"
+if sync_output="$(ADOPTER_ROOTS="$TEST_TMP/no-adopters" \
+  bash "$SYNC_REPO/scripts/sync-personal-build.sh" 2>&1)"; then
+  fail "sync propagated a dirty standard asset"
+fi
+printf '%s\n' "$sync_output" | grep -q 'uncommitted changes' \
+  || fail "sync failed for the wrong reason: $sync_output"
+pass "sync refuses to propagate uncommitted standard assets"
+
 # Standard paths must not traverse symlinks outside the workspace.
 LINK_TARGET="$TEST_TMP/link-target"
 LINK_WORKSPACE="$TEST_TMP/link-workspace"

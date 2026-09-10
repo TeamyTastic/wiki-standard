@@ -73,6 +73,65 @@ echo "wiki-standard source: $REPO_DIR"
 echo "install target:       $TARGET_DIR"
 echo ""
 
+# A workspace may pin standard paths it has deliberately customised, via
+# `standard_pinned` in its own .wiki-standard.local.json. Pinned paths are
+# skipped by the installer instead of being backed up and replaced. This
+# narrows installer authority; it can never expand it.
+PINNED=()
+LOCAL_MANIFEST="${TARGET_DIR}/.wiki-standard.local.json"
+if [ -f "$LOCAL_MANIFEST" ] && [ ! -L "$LOCAL_MANIFEST" ]; then
+  if LOCAL_PINNED="$(wiki_standard_manifest_array "$LOCAL_MANIFEST" standard_pinned 2>/dev/null)"; then
+    while IFS= read -r pinned; do
+      [ -z "$pinned" ] && continue
+      if ! wiki_standard_validate_relative_path "$pinned"; then
+        echo "Error: unsafe standard_pinned path in local manifest: '$pinned'." >&2
+        exit 1
+      fi
+      PINNED[${#PINNED[@]}]="$pinned"
+    done <<< "$LOCAL_PINNED"
+  fi
+fi
+
+# Pins are descendant-scoped, like every other declared path in this profile:
+# a pinned path covers everything under it, and pinning one file below a
+# directory item pins only that file.
+is_pinned() {
+  local candidate="$1" pinned
+  for pinned in ${PINNED+"${PINNED[@]}"}; do
+    case "$candidate" in
+      "$pinned"|"$pinned"/*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+has_pinned_descendant() {
+  local candidate="$1" pinned
+  for pinned in ${PINNED+"${PINNED[@]}"}; do
+    case "$pinned" in
+      "$candidate"/*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# Installing a directory item replaces the whole directory, which would delete
+# a file pinned below it. Expand such an item into its children instead, so the
+# pinned path is skipped and its siblings still receive updates.
+expand_item() {
+  local item="$1" child
+  if [ ! -d "${REPO_DIR}/${item}" ] || ! has_pinned_descendant "$item"; then
+    printf '%s\n' "$item"
+    return 0
+  fi
+  while IFS= read -r child; do
+    [ -z "$child" ] && continue
+    expand_item "${child#"${REPO_DIR}/"}"
+  done <<EOF
+$(find "${REPO_DIR}/${item}" -mindepth 1 -maxdepth 1)
+EOF
+}
+
 # Relative paths (from REPO_DIR) installed into the same target paths.
 # This array is derived from the manifest rather than maintained separately.
 ITEMS=()
@@ -135,6 +194,17 @@ assert_no_symlink_components() {
   IFS="$old_ifs"
 }
 
+EXPANDED=()
+for item in "${ITEMS[@]}"; do
+  while IFS= read -r expanded; do
+    [ -z "$expanded" ] && continue
+    EXPANDED[${#EXPANDED[@]}]="$expanded"
+  done <<EOF
+$(expand_item "$item")
+EOF
+done
+ITEMS=("${EXPANDED[@]}")
+
 # Refuse rather than follow links that could escape the declared target.
 for item in "${ITEMS[@]}"; do
   assert_no_symlink_components "$item"
@@ -143,6 +213,7 @@ assert_no_symlink_components "$VERSION_MARKER_REL"
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR=""
+UNCHANGED=0
 
 ensure_backup_dir() {
   if [ "$DRY_RUN" -eq 1 ]; then
@@ -218,6 +289,13 @@ install_item() {
   local src="${REPO_DIR}/${rel_path}"
   local dst="${TARGET_DIR}/${rel_path}"
 
+  # Already byte-identical: a re-run must be a genuine no-op, so that a
+  # scheduled sync stays silent when there is nothing to propagate.
+  if [ -e "$dst" ] && ! paths_differ "$src" "$dst"; then
+    UNCHANGED=$((UNCHANGED + 1))
+    return 0
+  fi
+
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "  would install: ${rel_path}"
     return 0
@@ -242,6 +320,7 @@ install_item() {
 
 echo "Checking for local conflicts..."
 for item in "${ITEMS[@]}"; do
+  is_pinned "$item" && continue
   backup_if_conflicting "$item"
 done
 echo ""
@@ -252,8 +331,15 @@ else
   echo "Installing wiki-standard assets..."
 fi
 for item in "${ITEMS[@]}"; do
+  if is_pinned "$item"; then
+    echo "  skipped (pinned by workspace): ${item}"
+    continue
+  fi
   install_item "$item"
 done
+if [ "$UNCHANGED" -gt 0 ]; then
+  echo "  already current: ${UNCHANGED} path(s)"
+fi
 echo ""
 
 COMMIT_HASH="unknown"
