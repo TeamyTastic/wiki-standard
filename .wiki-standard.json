@@ -13,6 +13,7 @@
       "AGENTS.md",
       "CLAUDE.md",
       "conventions",
+      "adapters",
       "templates",
       "scripts/check-standard.sh",
       "scripts/check-okf.sh",

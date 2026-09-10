@@ -13,9 +13,12 @@ set -euo pipefail
 
 UPSTREAM_REMOTE="${UPSTREAM_REMOTE:-origin}"
 BRANCH="${BRANCH:-main}"
-# Search roots for adopting workspaces. Deliberately not $HOME — that also
-# sweeps up archived/scratchpad copies of old wikis.
-ADOPTER_ROOTS="${ADOPTER_ROOTS:-$HOME/Library/Mobile Documents:$HOME/Projects}"
+# Search roots for adopting workspaces. Deliberately not $HOME, and not
+# $HOME/Documents wholesale — both sweep up preservation copies and old
+# scratch clones that carry a marker but must never be written to. (2026-09-10:
+# a live migration had a full backup of an adopting wiki under
+# Documents/Codex/.../work/, being hash-verified while the sync ran.)
+ADOPTER_ROOTS="${ADOPTER_ROOTS:-$HOME/Library/Mobile Documents:$HOME/Projects:$HOME/Documents/AgentScratchpads}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
