@@ -172,6 +172,7 @@ assert_no_symlink_components "$VERSION_MARKER_REL"
 
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR=""
+UNCHANGED=0
 
 ensure_backup_dir() {
   if [ "$DRY_RUN" -eq 1 ]; then
@@ -247,6 +248,13 @@ install_item() {
   local src="${REPO_DIR}/${rel_path}"
   local dst="${TARGET_DIR}/${rel_path}"
 
+  # Already byte-identical: a re-run must be a genuine no-op, so that a
+  # scheduled sync stays silent when there is nothing to propagate.
+  if [ -e "$dst" ] && ! paths_differ "$src" "$dst"; then
+    UNCHANGED=$((UNCHANGED + 1))
+    return 0
+  fi
+
   if [ "$DRY_RUN" -eq 1 ]; then
     echo "  would install: ${rel_path}"
     return 0
@@ -288,6 +296,9 @@ for item in "${ITEMS[@]}"; do
   fi
   install_item "$item"
 done
+if [ "$UNCHANGED" -gt 0 ]; then
+  echo "  already current: ${UNCHANGED} path(s)"
+fi
 echo ""
 
 COMMIT_HASH="unknown"
