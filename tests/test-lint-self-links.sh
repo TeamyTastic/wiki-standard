@@ -62,7 +62,12 @@ FAIL=0
 # The broken-links section header in lint-content.sh is:
 # "## Broken links (wikilink target resolves to no note in the wiki)"
 # Any [RED LINK] line for self-ref.md -> [[self-ref]] is the bug.
-if grep -qF "[RED LINK]  self-ref.md -> [[self-ref]]" <<< "$OUTPUT"; then
+if ! grep -qF "## Broken links" <<< "$OUTPUT"; then
+  echo "FAIL: lint output has no Broken links section"
+  echo "$OUTPUT"
+  FAIL=1
+fi
+if grep -qE '\[RED LINK\]  self-ref.md -> ' <<< "$OUTPUT"; then
   echo "FAIL: self-ref.md self-link [[self-ref]] was incorrectly reported as a broken link"
   echo "--- Full output ---"
   echo "$OUTPUT"

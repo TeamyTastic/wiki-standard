@@ -74,11 +74,12 @@ before="$(find "$TARGET" -type f -print | sort)"
 dry_output="$(bash "$REPO_DIR/scripts/install-standard.sh" --dry-run "$TARGET")"
 after="$(find "$TARGET" -type f -print | sort)"
 [ "$before" = "$after" ] || fail "dry-run changed the target"
-printf '%s\n' "$dry_output" | grep -q 'Dry run complete. No files were changed.' || fail "dry-run did not report read-only completion"
+grep -q 'Dry run complete. No files were changed.' <<< "$dry_output" || fail "dry-run did not report read-only completion"
 pass "installer dry-run is read-only"
 
 # Installation must preserve content and install the neutral canonical contract.
 bash "$REPO_DIR/scripts/install-standard.sh" "$TARGET" >/dev/null
+[ -f "$TARGET/scripts/install-standard.sh" ] || fail "update-adopters.sh needs install-standard.sh installed beside it"
 [ -f "$TARGET/notes/existing.md" ] || fail "installer removed content"
 [ -f "$TARGET/AGENT.md" ] || fail "canonical AGENT.md missing"
 [ -f "$TARGET/.wiki-standard.json" ] || fail "ownership manifest missing"
@@ -115,7 +116,7 @@ grep -q 'workspace-owned ownership rules' "$PIN_TARGET/conventions/ownership.md"
   || fail "installer replaced a file pinned below a directory item"
 cmp -s "$REPO_DIR/conventions/capture-on-demand.md" "$PIN_TARGET/conventions/capture-on-demand.md" \
   || fail "installer skipped an unpinned sibling of a pinned file"
-printf '%s\n' "$pin_output" | grep -q 'skipped (pinned by workspace): conventions/ownership.md' \
+grep -q 'skipped (pinned by workspace): conventions/ownership.md' <<< "$pin_output" \
   || fail "installer did not report the descendant pin as skipped"
 pass "pins below a directory item are honoured"
 
@@ -136,7 +137,7 @@ if sync_output="$(ADOPTER_ROOTS="$TEST_TMP/no-adopters" \
   bash "$SYNC_REPO/scripts/sync-personal-build.sh" 2>&1)"; then
   fail "sync propagated a dirty standard asset"
 fi
-printf '%s\n' "$sync_output" | grep -q 'uncommitted changes' \
+grep -q 'uncommitted changes' <<< "$sync_output" \
   || fail "sync failed for the wrong reason: $sync_output"
 pass "sync refuses to propagate uncommitted standard assets"
 
@@ -198,10 +199,10 @@ EOF
 mkdir -p "$BUNDLE/scripts"
 cp "$REPO_DIR/scripts/manifest-paths.sh" "$BUNDLE/scripts/manifest-paths.sh"
 lint_output="$(bash "$REPO_DIR/scripts/lint-content.sh" "$BUNDLE" 2>&1 || true)"
-printf '%s\n' "$lint_output" | grep -q 'gamma.md -> concepts/missing.md' || fail "missing Markdown target was not reported"
-printf '%s\n' "$lint_output" | grep -q 'alpha.md -> concepts/beta.md' && fail "valid Markdown target reported broken"
-printf '%s\n' "$lint_output" | grep -q 'alpha.md -> Gamma' && fail "valid legacy target reported broken"
-printf '%s\n' "$lint_output" | grep -q 'generated/derived.md' && fail "locally generated content was linted"
+grep -q 'gamma.md -> concepts/missing.md' <<< "$lint_output" || fail "missing Markdown target was not reported"
+grep -q 'alpha.md -> concepts/beta.md' <<< "$lint_output" && fail "valid Markdown target reported broken"
+grep -q 'alpha.md -> Gamma' <<< "$lint_output" && fail "valid legacy target reported broken"
+grep -q 'generated/derived.md' <<< "$lint_output" && fail "locally generated content was linted"
 pass "linter resolves Markdown and legacy links"
 
 # Bundle conformance is checked at an explicit content boundary.
@@ -210,5 +211,11 @@ if bash "$REPO_DIR/scripts/check-okf.sh" "$TARGET" >/dev/null 2>&1; then
   fail "workspace infrastructure was incorrectly accepted as an OKF bundle"
 fi
 pass "profile and OKF bundle boundaries remain separate"
+
+# Linter prose must not contradict conventions/metadata.md (structured `sources` is canonical).
+if grep -q 'single scalar' "$REPO_DIR/scripts/lint-content.sh"; then
+  fail "lint-content.sh still claims 'source' is a single scalar"
+fi
+pass "linter provenance note matches metadata convention"
 
 echo "All tests passed."

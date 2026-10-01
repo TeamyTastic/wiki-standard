@@ -512,8 +512,8 @@ if [ -s "$SHARED_PAIRS" ]; then
   done < "$SHARED_PAIRS"
 fi
 [ "$SUGGEST_COUNT" -eq 0 ] && echo "  none"
-echo "  (tag-overlap proxy, not citation overlap — this standard's 'source'"
-echo "   field is a single scalar, not a list. See conventions/metadata.md.)"
+echo "  (tag-overlap proxy, not citation overlap — structured 'sources' are"
+echo "   canonical, so shared sources are not compared. See conventions/metadata.md.)"
 echo ""
 
 echo "Summary: ${TOTAL_CONTENT} content notes scanned."
