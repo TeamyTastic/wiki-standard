@@ -18,6 +18,7 @@
       "scripts/check-standard.sh",
       "scripts/check-okf.sh",
       "scripts/lint-content.sh",
+      "scripts/install-standard.sh",
       "scripts/manifest-paths.sh",
       "scripts/update-adopters.sh"
     ],
