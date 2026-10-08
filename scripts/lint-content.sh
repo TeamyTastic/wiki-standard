@@ -293,7 +293,9 @@ while IFS= read -r rel; do
 
   # Portable Markdown links: [label](/path.md) or [label](../path.md).
   # Images, external URIs, and same-document fragments are not concept edges.
-  markdown_targets="$(grep -oE '(^|[^!])\[[^][]+\]\([^)]*\)' "$file" 2>/dev/null |
+  # Fenced and inline code are stripped first: example links there are not edges.
+  markdown_targets="$(awk '/^[[:space:]]*(```|~~~)/{f=!f; next} !f{gsub(/`[^`]*`/,""); print}' "$file" 2>/dev/null |
+    grep -oE '(^|[^!])\[[^][]+\]\([^)]*\)' |
     sed -E 's/^[^[]*//; s/^[^]]*\]\(//; s/\)$//; s/[[:space:]]+"[^"]*"$//' || true)"
   if [ -n "$markdown_targets" ]; then
     while IFS= read -r target; do

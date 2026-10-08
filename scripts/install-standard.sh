@@ -303,8 +303,10 @@ install_item() {
 
   mkdir -p "$(dirname "$dst")"
 
+  # Clear any existing dst first so a file/dir type mismatch is replaced,
+  # not nested (cp FILE existing-dir/ copies *into* the dir).
+  rm -rf "$dst"
   if [ -d "$src" ]; then
-    rm -rf "$dst"
     mkdir -p "$dst"
     cp -R "$src/." "$dst/"
   else

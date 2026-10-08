@@ -97,6 +97,13 @@ backup_agent="$(find "$TARGET" -path "*/${BACKUP_PATTERN}/AGENT.md" -type f | he
 grep -q 'local agent policy' "$backup_agent" || fail "backup did not preserve the local value"
 pass "conflicting infrastructure is recoverable"
 
+# A directory squatting on a file asset's path must be replaced, not nested into.
+rm -rf "$TARGET/AGENT.md" "$TARGET"/.wiki-standard-backup-*
+mkdir "$TARGET/AGENT.md"
+bash "$REPO_DIR/scripts/install-standard.sh" "$TARGET" >/dev/null
+[ -f "$TARGET/AGENT.md" ] || fail "file asset not installed over a directory"
+pass "installer replaces a directory squatting on a file asset"
+
 # A pin below a directory item must survive, without freezing its siblings.
 PIN_TARGET="$TEST_TMP/pin-target"
 mkdir -p "$PIN_TARGET"
@@ -198,11 +205,25 @@ cat > "$BUNDLE/.wiki-standard.local.json" <<'EOF'
 EOF
 mkdir -p "$BUNDLE/scripts"
 cp "$REPO_DIR/scripts/manifest-paths.sh" "$BUNDLE/scripts/manifest-paths.sh"
+cat > "$BUNDLE/concepts/delta.md" <<'EOF'
+---
+type: concept
+title: Delta
+created: 2099-01-01
+updated: 2099-01-01
+---
+Inline `[x](/concepts/inline-nope.md)` and a fence:
+
+```markdown
+[y](/concepts/fence-nope.md)
+```
+EOF
 lint_output="$(bash "$REPO_DIR/scripts/lint-content.sh" "$BUNDLE" 2>&1 || true)"
 grep -q 'gamma.md -> concepts/missing.md' <<< "$lint_output" || fail "missing Markdown target was not reported"
 grep -q 'alpha.md -> concepts/beta.md' <<< "$lint_output" && fail "valid Markdown target reported broken"
 grep -q 'alpha.md -> Gamma' <<< "$lint_output" && fail "valid legacy target reported broken"
 grep -q 'generated/derived.md' <<< "$lint_output" && fail "locally generated content was linted"
+grep -q 'inline-nope\|fence-nope' <<< "$lint_output" && fail "links inside code were reported broken"
 pass "linter resolves Markdown and legacy links"
 
 # Bundle conformance is checked at an explicit content boundary.
